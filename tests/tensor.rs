@@ -1,4 +1,43 @@
-use neurust::{get_variable, Array};
+use neurust::{get_placeholder, get_variable, Array};
+use std::collections::HashMap;
+
+#[test]
+fn test_variable() {
+    let a = get_variable(Array::new(3., vec![2, 3, 2]));
+    let b = get_variable(Array::new(2., vec![2, 2, 4]));
+
+    assert_eq!(a.eval(None), Array::new(3., vec![2, 3, 2]));
+    assert_eq!(a.grad(&a, None), Some(Array::new(1., vec![2, 3, 2])));
+    assert_eq!(a.grad(&b, None), None);
+}
+
+#[test]
+fn test_placeholder() {
+    let a = get_placeholder("test_ph".to_owned());
+    let b = get_variable(Array::new(2., vec![2, 2, 4]));
+    let value = Array::new(3., vec![2, 2, 4]);
+    let mut feed_dict = HashMap::new();
+    feed_dict.insert("test_ph".to_owned(), &value);
+
+    assert_eq!(
+        a.eval(Some(feed_dict.clone())),
+        Array::new(3., vec![2, 2, 4])
+    );
+    assert_eq!(
+        a.grad(&a, Some(feed_dict.clone())),
+        Some(Array::new(1., vec![2, 2, 4]))
+    );
+    assert_eq!(a.grad(&b, Some(feed_dict.clone())), None);
+}
+
+#[test]
+#[should_panic]
+fn test_placeholder_not_in_feed_dict() {
+    let a = get_placeholder::<f32>("test_ph".to_owned());
+    let feed_dict = HashMap::new();
+
+    a.eval(Some(feed_dict.clone()));
+}
 
 macro_rules! test_tensor_operators {
     ($name:ident, $operator:tt, $result_eval:expr, $result_grad1:expr, $result_grad2:expr) => {
