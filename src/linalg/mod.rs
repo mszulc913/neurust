@@ -1,7 +1,6 @@
 mod array;
 mod array_view;
 mod matmul;
-mod ops;
 mod utils;
 
 use num::Float;
@@ -12,6 +11,3 @@ impl<T> Numeric for T where T: Float + fmt::Display + Copy + fmt::Debug + 'stati
 
 pub use array::*;
 pub use array_view::ArrayView;
-pub use ops::{
-    add, add_scalar, div, div_scalar, matmul, multiply, multiply_scalar, sub, sub_scalar,
-};
