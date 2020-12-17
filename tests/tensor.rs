@@ -172,3 +172,78 @@ mod test_neg {
         assert_eq!(neg.eval(None), Array::new(-1., vec![2, 3, 2]));
     }
 }
+
+#[test]
+#[rustfmt::skip]
+fn test_complex_example() {
+    let a = get_variable(Array::from_vec(
+        vec![2., 3., 4., 5., 10., 12., 2., 6., 12., 10., 23., 12.],
+        vec![2, 3, 2])
+    );
+    let b = get_variable(Array::new(3., vec![2, 2, 4]));
+    let c = get_placeholder::<f32>("test".to_owned());
+    let ph_value = Array::new(17., vec![2, 3, 4]);
+    let mut feed_dict = HashMap::new();
+    feed_dict.insert("test".to_owned(), &ph_value);
+
+    let result = (a.matmul(&b) + 3.) * &c / 5.;
+
+    assert_eq!(
+        result.eval(Some(feed_dict.clone())),
+        Array::from_vec(
+            vec![
+                61.2, 61.2, 61.2, 61.2,
+                102., 102., 102., 102.,
+                234.6, 234.6, 234.6, 234.6,
+
+                91.8, 91.8, 91.8, 91.8,
+                234.6, 234.6, 234.6, 234.6,
+                367.2, 367.2, 367.2, 367.2
+            ],
+            vec![2, 3, 4]
+        )
+    );
+    assert_eq!(
+        result.grad(&a, Some(feed_dict.clone())),
+        Some(Array::from_vec(
+            vec![
+                40.800003, 40.800003,
+                40.800003, 40.800003,
+                40.800003, 40.800003,
+
+                40.800003, 40.800003,
+                40.800003, 40.800003,
+                40.800003, 40.800003,
+            ],
+            vec![2, 3, 2]
+        ))
+    );
+    assert_eq!(
+        result.grad(&b, Some(feed_dict.clone())),
+        Some(Array::from_vec(
+            vec![
+                54.4, 54.4, 54.4, 54.4,
+                68., 68., 68., 68.,
+
+                125.8, 125.8 , 125.8, 125.8,
+                95.200005, 95.200005, 95.200005, 95.200005
+            ],
+            vec![2, 2, 4]
+        ))
+    );
+    assert_eq!(
+        result.grad(&c, Some(feed_dict.clone())),
+        Some(Array::from_vec(
+            vec![
+                3.6000001, 3.6000001, 3.6000001, 3.6000001,
+                6., 6., 6., 6.,
+                13.8, 13.8, 13.8, 13.8,
+
+                5.4, 5.4, 5.4, 5.4,
+                13.8, 13.8, 13.8, 13.8,
+                21.6, 21.6, 21.6, 21.6
+            ],
+            vec![2, 3, 4]
+        ))
+    );
+}
