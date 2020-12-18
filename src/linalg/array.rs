@@ -17,8 +17,8 @@ use std::ops::{
 /// * `data` - `Vec<T>` with matrix' data.
 #[derive(PartialEq)]
 pub struct Array<T: Numeric> {
-    shape: Vec<usize>,
-    data: Vec<T>,
+    pub(crate) shape: Vec<usize>,
+    pub(crate) data: Vec<T>,
 }
 
 impl<T: Numeric> Array<T> {
