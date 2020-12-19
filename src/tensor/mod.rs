@@ -1,8 +1,10 @@
 mod arithmetic;
 pub mod math;
+mod reduce;
 
 use crate::graph::{GraphOp, Placeholder, Variable};
 use crate::linalg::{Array, Numeric};
+pub use reduce::{reduce_mean, reduce_sum};
 
 use crate::graph::arithmetic::MatMulOp;
 use std::collections::HashMap;

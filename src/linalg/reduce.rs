@@ -2,19 +2,26 @@ use crate::linalg::Numeric;
 use crate::Array;
 use num::cast;
 
-fn get_shape_after_reduce<T: Numeric>(
-    array: &Array<T>,
-    axis: Option<usize>,
-    keep_dims: bool,
-) -> Vec<usize> {
+fn check_reduce_axis<T: Numeric>(array: &Array<T>, axis: Option<usize>) {
     if let Some(axis_val) = axis {
-        let mut shape = array.get_shape();
+        let shape = array.get_shape();
         if axis_val >= shape.len() {
             panic!(
                 "Invalid reduction dimension! Got shape: {:?} and dimension: {}.",
                 shape, axis_val
             )
         }
+    }
+}
+
+fn get_shape_after_reduce<T: Numeric>(
+    array: &Array<T>,
+    axis: Option<usize>,
+    keep_dims: bool,
+) -> Vec<usize> {
+    check_reduce_axis(array, axis);
+    if let Some(axis_val) = axis {
+        let mut shape = array.get_shape();
         if keep_dims {
             shape[axis_val] = 1;
         } else {
@@ -124,7 +131,7 @@ pub fn reduce<T: Numeric>(
     }
 }
 
-/// Computes a sum of elements of a tensor across dimensions.
+/// Computes a sum of elements of an array across dimensions.
 ///
 /// If `None` is passed, sum of all array elements is computed.
 ///
@@ -180,7 +187,7 @@ pub fn reduce_sum<T: Numeric>(array: &Array<T>, axis: Option<usize>, keep_dims: 
     reduce(array, |x, y| x + y, axis, keep_dims)
 }
 
-/// Computes a product of elements of a tensor across dimensions.
+/// Computes a product of elements of an array across dimensions.
 ///
 /// If `None` is passed, product of all array elements is computed.
 ///
@@ -236,7 +243,7 @@ pub fn reduce_prod<T: Numeric>(array: &Array<T>, axis: Option<usize>, keep_dims:
     reduce(array, |x, y| x * y, axis, keep_dims)
 }
 
-/// Computes a maximum of elements of a tensor across dimensions.
+/// Computes a maximum of elements of an array across dimensions.
 ///
 /// If `None` is passed, maximum of all array elements is computed.
 ///
@@ -293,7 +300,7 @@ pub fn reduce_max<T: Numeric>(array: &Array<T>, axis: Option<usize>, keep_dims: 
     reduce(array, |x, y| x.max(y), axis, keep_dims)
 }
 
-/// Computes a minimum of elements of a tensor across dimensions.
+/// Computes a minimum of elements of an array across dimensions.
 ///
 /// If `None` is passed, sum of all array elements is computed.
 ///
@@ -350,7 +357,7 @@ pub fn reduce_min<T: Numeric>(array: &Array<T>, axis: Option<usize>, keep_dims: 
     reduce(array, |x, y| x.min(y), axis, keep_dims)
 }
 
-/// Computes a mean of elements of a tensor across dimensions.
+/// Computes a mean of elements of an array across dimensions.
 ///
 /// If `None` is passed, mean of all array elements is computed.
 ///

@@ -1,5 +1,6 @@
 pub(crate) mod arithmetic;
 pub(crate) mod math;
+pub(crate) mod reduce;
 
 use crate::linalg::{Array, Numeric};
 use std::any::{type_name, Any};
