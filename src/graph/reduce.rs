@@ -52,7 +52,7 @@ impl<'a, T: Numeric> GraphOp<T> for ReduceSumOp<T> {
     impl_trait_reduce_op!(ReduceSumOp, "ReduceSumOp");
     fn compute(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         cache: &mut HashMap<usize, Array<T>>,
     ) -> Array<T> {
         reduce_sum(
@@ -64,7 +64,7 @@ impl<'a, T: Numeric> GraphOp<T> for ReduceSumOp<T> {
 
     fn compute_accum_grad(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
         dependant_node: &dyn GraphOp<T>,
         grad: &Array<T>,
@@ -87,7 +87,7 @@ impl<'a, T: Numeric> GraphOp<T> for ReduceMeanOp<T> {
     impl_trait_reduce_op!(ReduceMeanOp, "ReduceMeanOp");
     fn compute(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         cache: &mut HashMap<usize, Array<T>>,
     ) -> Array<T> {
         reduce_mean(
@@ -99,7 +99,7 @@ impl<'a, T: Numeric> GraphOp<T> for ReduceMeanOp<T> {
 
     fn compute_accum_grad(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
         dependant_node: &dyn GraphOp<T>,
         grad: &Array<T>,

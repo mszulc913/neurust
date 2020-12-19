@@ -21,7 +21,7 @@ macro_rules! impl_map_op {
         impl<'a, T: Numeric + 'static> GraphOp<T> for $op_name<T> {
             fn compute(
                 &self,
-                feed_dict: &HashMap<String, &Array<T>>,
+                feed_dict: Option<&HashMap<String, &Array<T>>>,
                 cache: &mut HashMap<usize, Array<T>>,
             ) -> Array<T> {
                 let mut res = self.input.value(feed_dict, cache);
@@ -39,7 +39,7 @@ macro_rules! impl_map_op {
 
             fn compute_accum_grad(
                 &self,
-                feed_dict: &HashMap<String, &Array<T>>,
+                feed_dict: Option<&HashMap<String, &Array<T>>>,
                 compute_cache: &mut HashMap<usize, Array<T>>,
                 dependant_node: &dyn GraphOp<T>,
                 grad: &Array<T>,
@@ -90,7 +90,7 @@ macro_rules! impl_map_op_with_parameter {
         impl<'a, T: Numeric + 'static> GraphOp<T> for $op_name<T> {
             fn compute(
                 &self,
-                feed_dict: &HashMap<String, &Array<T>>,
+                feed_dict: Option<&HashMap<String, &Array<T>>>,
                 cache: &mut HashMap<usize, Array<T>>,
             ) -> Array<T> {
                 let mut res = self.input.value(feed_dict, cache);
@@ -108,7 +108,7 @@ macro_rules! impl_map_op_with_parameter {
 
             fn compute_accum_grad(
                 &self,
-                feed_dict: &HashMap<String, &Array<T>>,
+                feed_dict: Option<&HashMap<String, &Array<T>>>,
                 compute_cache: &mut HashMap<usize, Array<T>>,
                 dependant_node: &dyn GraphOp<T>,
                 grad: &Array<T>,

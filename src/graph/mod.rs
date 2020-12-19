@@ -15,7 +15,7 @@ pub trait GraphOp<T: Numeric> {
     // with usage of a cache map.
     fn compute(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
     ) -> Array<T>;
 
@@ -23,7 +23,7 @@ pub trait GraphOp<T: Numeric> {
     // of `X` w.r.t. `self` using chain rule.
     fn compute_accum_grad(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
         dependant_node: &dyn GraphOp<T>,
         grad: &Array<T>,
@@ -43,7 +43,7 @@ pub trait GraphOp<T: Numeric> {
     // This either fetches the value from `compute_cache` or computes it via `compute()`.
     fn value(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
     ) -> Array<T> {
         let key = self.ref_as_usize();
@@ -63,27 +63,24 @@ pub trait GraphOp<T: Numeric> {
     }
 
     // Evaluates the operation.
-    fn eval(&self, feed_dict: Option<HashMap<String, &Array<T>>>) -> Array<T> {
+    fn eval(&self, feed_dict: Option<&HashMap<String, &Array<T>>>) -> Array<T> {
         let mut compute_cache = HashMap::<usize, Array<T>>::new();
-        let feed_unwrapped = feed_dict.unwrap_or_default();
-        self.value(&feed_unwrapped, &mut compute_cache)
+        self.value(feed_dict, &mut compute_cache)
     }
 
     // Computes gradient of the node (`self`) w.r.t. operation (variable) `node`.
     fn grad(
         &self,
         node: &dyn GraphOp<T>,
-        feed_dict: Option<HashMap<String, &Array<T>>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
     ) -> Option<Array<T>> {
         let mut compute_cache = HashMap::<usize, Array<T>>::new();
         let mut accum_grad_map = HashMap::<usize, Array<T>>::new();
         let mut stack = Vec::<(Rc<dyn GraphOp<T>>, Rc<dyn GraphOp<T>>)>::new();
-        let feed_unwrapped = feed_dict.unwrap_or_default();
 
         let accum_grad_self = Array::<T>::new(
             T::one(),
-            self.compute(&feed_unwrapped, &mut compute_cache)
-                .get_shape(),
+            self.compute(feed_dict, &mut compute_cache).get_shape(),
         );
         if self.ref_as_usize() == node.ref_as_usize() {
             return Some(accum_grad_self);
@@ -99,7 +96,7 @@ pub trait GraphOp<T: Numeric> {
 
         while let Some((current_node, current_parrent)) = stack.pop() {
             let parrent_grad = current_parrent.compute_accum_grad(
-                &feed_unwrapped,
+                feed_dict,
                 &mut compute_cache,
                 current_node.as_ref(),
                 &accum_grad_map[&current_parrent.ref_as_usize()],
@@ -170,7 +167,7 @@ impl<'a, T: Numeric> WrapperOp<'a, T> {
 impl<'a, T: Numeric> GraphOp<T> for WrapperOp<'a, T> {
     fn compute(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
     ) -> Array<T> {
         self.input.value(feed_dict, compute_cache)
@@ -178,7 +175,7 @@ impl<'a, T: Numeric> GraphOp<T> for WrapperOp<'a, T> {
 
     fn compute_accum_grad(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
         dependant_node: &dyn GraphOp<T>,
         grad: &Array<T>,
@@ -214,10 +211,13 @@ impl Placeholder {
 impl<T: Numeric> GraphOp<T> for Placeholder {
     fn compute(
         &self,
-        feed_dict: &HashMap<String, &Array<T>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
         _: &mut HashMap<usize, Array<T>>,
     ) -> Array<T> {
-        if let Some(value) = feed_dict.get(&self.id) {
+        if let Some(value) = feed_dict
+            .expect("Missing feed_dict argument. There are placeholder tensors in the graph!")
+            .get(&self.id)
+        {
             (*value).clone()
         } else {
             panic!("Value not found in feed_dict: {}", self.id)
@@ -226,7 +226,7 @@ impl<T: Numeric> GraphOp<T> for Placeholder {
 
     fn compute_accum_grad(
         &self,
-        _: &HashMap<String, &Array<T>>,
+        _: Option<&HashMap<String, &Array<T>>>,
         _: &mut HashMap<usize, Array<T>>,
         _: &dyn GraphOp<T>,
         _: &Array<T>,
@@ -257,7 +257,7 @@ impl<T: Numeric> Variable<T> {
 impl<T: Numeric> GraphOp<T> for Variable<T> {
     fn compute(
         &self,
-        _: &HashMap<String, &Array<T>>,
+        _: Option<&HashMap<String, &Array<T>>>,
         _: &mut HashMap<usize, Array<T>>,
     ) -> Array<T> {
         self.data.clone()
@@ -265,7 +265,7 @@ impl<T: Numeric> GraphOp<T> for Variable<T> {
 
     fn compute_accum_grad(
         &self,
-        _: &HashMap<String, &Array<T>>,
+        _: Option<&HashMap<String, &Array<T>>>,
         _: &mut HashMap<usize, Array<T>>,
         _: &dyn GraphOp<T>,
         _: &Array<T>,

@@ -19,15 +19,12 @@ fn test_placeholder() {
     let mut feed_dict = HashMap::new();
     feed_dict.insert("test_ph".to_owned(), &value);
 
+    assert_eq!(a.eval(Some(&feed_dict)), Array::new(3., vec![2, 2, 4]));
     assert_eq!(
-        a.eval(Some(feed_dict.clone())),
-        Array::new(3., vec![2, 2, 4])
-    );
-    assert_eq!(
-        a.grad(&a, Some(feed_dict.clone())),
+        a.grad(&a, Some(&feed_dict)),
         Some(Array::new(1., vec![2, 2, 4]))
     );
-    assert_eq!(a.grad(&b, Some(feed_dict.clone())), None);
+    assert_eq!(a.grad(&b, Some(&feed_dict)), None);
 }
 
 #[test]
@@ -36,7 +33,7 @@ fn test_placeholder_not_in_feed_dict() {
     let a = get_placeholder::<f32>("test_ph".to_owned());
     let feed_dict = HashMap::new();
 
-    a.eval(Some(feed_dict.clone()));
+    a.eval(Some(&feed_dict));
 }
 
 macro_rules! test_tensor_operators {
@@ -189,7 +186,7 @@ fn test_complex_example() {
     let result = (a.matmul(&b) + 3.) * &c / 5.;
 
     assert_eq!(
-        result.eval(Some(feed_dict.clone())),
+        result.eval(Some(&feed_dict)),
         Array::from_vec(
             vec![
                 61.2, 61.2, 61.2, 61.2,
@@ -204,7 +201,7 @@ fn test_complex_example() {
         )
     );
     assert_eq!(
-        result.grad(&a, Some(feed_dict.clone())),
+        result.grad(&a, Some(&feed_dict)),
         Some(Array::from_vec(
             vec![
                 40.800003, 40.800003,
@@ -219,7 +216,7 @@ fn test_complex_example() {
         ))
     );
     assert_eq!(
-        result.grad(&b, Some(feed_dict.clone())),
+        result.grad(&b, Some(&feed_dict)),
         Some(Array::from_vec(
             vec![
                 54.4, 54.4, 54.4, 54.4,
@@ -232,7 +229,7 @@ fn test_complex_example() {
         ))
     );
     assert_eq!(
-        result.grad(&c, Some(feed_dict.clone())),
+        result.grad(&c, Some(&feed_dict)),
         Some(Array::from_vec(
             vec![
                 3.6000001, 3.6000001, 3.6000001, 3.6000001,

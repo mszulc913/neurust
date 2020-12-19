@@ -43,7 +43,7 @@ impl<T: Numeric> Tensor<T> {
     ///     Array::from_vec(vec![4., 6., 8., 10.], vec![2, 2])
     /// )
     /// ```
-    pub fn eval(&self, feed_dict: Option<HashMap<String, &Array<T>>>) -> Array<T> {
+    pub fn eval(&self, feed_dict: Option<&HashMap<String, &Array<T>>>) -> Array<T> {
         self.op.eval(feed_dict)
     }
 
@@ -74,7 +74,7 @@ impl<T: Numeric> Tensor<T> {
     pub fn grad(
         &self,
         y: &Tensor<T>,
-        feed_dict: Option<HashMap<String, &Array<T>>>,
+        feed_dict: Option<&HashMap<String, &Array<T>>>,
     ) -> Option<Array<T>> {
         self.op.grad(y.op.as_ref(), feed_dict)
     }
@@ -156,7 +156,7 @@ pub fn get_variable<T: Numeric>(init_value: Array<T>) -> Tensor<T> {
 /// );
 ///
 /// assert_eq!(
-///     a.eval(Some(feed_dict)),
+///     a.eval(Some(&feed_dict)),
 ///     Array::from_vec(vec![0., 1., 2.], vec![1, 3])
 /// )
 /// ```
