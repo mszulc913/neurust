@@ -2,7 +2,7 @@ mod array;
 mod array_view;
 mod matmul;
 mod reduce;
-mod utils;
+pub mod utils;
 
 use num::Float;
 use std::fmt;

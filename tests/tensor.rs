@@ -1,4 +1,5 @@
-use neurust::{get_placeholder, get_variable, Array};
+use neurust::linalg::utils::are_arrays_near_equal;
+use neurust::{assert_arrays_rel_eq, get_placeholder, get_variable, Array};
 use std::collections::HashMap;
 
 #[test]
@@ -46,7 +47,9 @@ macro_rules! test_tensor_operators {
                 let a = get_variable(Array::new(1., vec![2, 2, 3]));
                 let b = get_variable(Array::new(2., vec![2, 2, 3]));
 
-                assert_eq!((&a $operator &b).eval(None), $result_eval);
+                let res = (&a $operator &b).eval(None);
+
+                assert_arrays_rel_eq!(res, $result_eval, 1e-7);
             }
 
             #[test]
@@ -54,7 +57,9 @@ macro_rules! test_tensor_operators {
                 let a = get_variable(Array::new(1., vec![2, 2, 3]));
                 let b = get_variable(Array::new(2., vec![2, 2, 3]));
 
-                assert_eq!((a $operator &b).eval(None), $result_eval);
+                let res = (a $operator &b).eval(None);
+
+                assert_arrays_rel_eq!(res, $result_eval, 1e-7);
             }
 
             #[test]
@@ -62,7 +67,9 @@ macro_rules! test_tensor_operators {
                 let a = get_variable(Array::new(1., vec![2, 2, 3]));
                 let b = get_variable(Array::new(2., vec![2, 2, 3]));
 
-                assert_eq!((&a $operator b).eval(None), $result_eval);
+                let res = (&a $operator b).eval(None);
+
+                assert_arrays_rel_eq!(res, $result_eval, 1e-7);
             }
 
             #[test]
@@ -70,23 +77,31 @@ macro_rules! test_tensor_operators {
                 let a = get_variable(Array::new(1., vec![2, 2, 3]));
                 let b = get_variable(Array::new(2., vec![2, 2, 3]));
 
-                assert_eq!((a $operator b).eval(None), $result_eval);
+                let res = (a $operator b).eval(None);
+
+                assert_arrays_rel_eq!(res, $result_eval, 1e-7);
             }
 
             #[test]
             fn test_operator_scalar_left(){
                 let a = get_variable::<f32>(Array::new(1., vec![2, 2, 3]));
 
-                assert_eq!((2. $operator &a).eval(None), $result_eval);
-                assert_eq!((2. $operator a).eval(None), $result_eval);
+                let res = (2. $operator &a).eval(None);
+                let res_consume = (2. $operator a).eval(None);
+
+                assert_arrays_rel_eq!(res, $result_eval, 1e-7);
+                assert_arrays_rel_eq!(res_consume, $result_eval, 1e-7);
             }
 
             #[test]
             fn test_operator_scalar_right(){
                 let a = get_variable(Array::new(1., vec![2, 2, 3]));
 
-                assert_eq!((&a $operator 2.).eval(None), $result_eval);
-                assert_eq!((a $operator 2.).eval(None), $result_eval);
+                let res = (&a $operator 2.).eval(None);
+                let res_consume = (a $operator 2.).eval(None);
+
+                assert_arrays_rel_eq!(res, $result_eval, 1e-7);
+                assert_arrays_rel_eq!(res_consume, $result_eval, 1e-7);
             }
 
             #[test]
@@ -96,8 +111,8 @@ macro_rules! test_tensor_operators {
                 let c = get_variable(Array::new(2., vec![2, 2, 3]));
                 let add = &a $operator &b;
 
-                assert_eq!(add.grad(&a, None), Some($result_grad1));
-                assert_eq!(add.grad(&b, None), Some($result_grad2));
+                assert_arrays_rel_eq!(add.grad(&a, None).unwrap(), $result_grad1, 1e-7);
+                assert_arrays_rel_eq!(add.grad(&b, None).unwrap(), $result_grad2, 1e-7);
                 assert_eq!(add.grad(&c, None), None);
             }
 
@@ -107,7 +122,7 @@ macro_rules! test_tensor_operators {
                 let b = get_variable(Array::new(2., vec![2, 2, 3]));
                 let add = &a $operator 2.;
 
-                assert_eq!(add.grad(&a, None), Some($result_grad1));
+                assert_arrays_rel_eq!(add.grad(&a, None).unwrap(), $result_grad1, 1e-7);
                 assert_eq!(add.grad(&b, None), None);
             }
         }
@@ -185,9 +200,9 @@ fn test_complex_example() {
 
     let result = (a.matmul(&b) + 3.) * &c / 5.;
 
-    assert_eq!(
-        result.eval(Some(&feed_dict)),
-        Array::from_vec(
+    assert_arrays_rel_eq!(
+        &result.eval(Some(&feed_dict)),
+        &Array::from_vec(
             vec![
                 61.2, 61.2, 61.2, 61.2,
                 102., 102., 102., 102.,
@@ -198,11 +213,12 @@ fn test_complex_example() {
                 367.2, 367.2, 367.2, 367.2
             ],
             vec![2, 3, 4]
-        )
+        ),
+        1e-7
     );
-    assert_eq!(
-        result.grad(&a, Some(&feed_dict)),
-        Some(Array::from_vec(
+    assert_arrays_rel_eq!(
+        &result.grad(&a, Some(&feed_dict)).unwrap(),
+        &Array::from_vec(
             vec![
                 40.800003, 40.800003,
                 40.800003, 40.800003,
@@ -213,11 +229,12 @@ fn test_complex_example() {
                 40.800003, 40.800003,
             ],
             vec![2, 3, 2]
-        ))
+        ),
+        1e-7
     );
-    assert_eq!(
-        result.grad(&b, Some(&feed_dict)),
-        Some(Array::from_vec(
+    assert_arrays_rel_eq!(
+        &result.grad(&b, Some(&feed_dict)).unwrap(),
+        &Array::from_vec(
             vec![
                 54.4, 54.4, 54.4, 54.4,
                 68., 68., 68., 68.,
@@ -226,11 +243,12 @@ fn test_complex_example() {
                 95.200005, 95.200005, 95.200005, 95.200005
             ],
             vec![2, 2, 4]
-        ))
+        ),
+        1e-7
     );
-    assert_eq!(
-        result.grad(&c, Some(&feed_dict)),
-        Some(Array::from_vec(
+    assert_arrays_rel_eq!(
+        &result.grad(&c, Some(&feed_dict)).unwrap(),
+        &Array::from_vec(
             vec![
                 3.6000001, 3.6000001, 3.6000001, 3.6000001,
                 6., 6., 6., 6.,
@@ -241,6 +259,7 @@ fn test_complex_example() {
                 21.6, 21.6, 21.6, 21.6
             ],
             vec![2, 3, 4]
-        ))
+        ),
+        1e-7
     );
 }
