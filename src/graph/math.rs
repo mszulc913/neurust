@@ -8,7 +8,7 @@ use std::rc::Rc;
 // elements of the input array.
 macro_rules! impl_map_op {
     ($op_name:ident, $op_name_str:expr, $compute_fn:expr, $grad_fn:expr) => {
-        pub struct $op_name<T: Numeric> {
+        pub(crate) struct $op_name<T: Numeric> {
             input: Rc<dyn GraphOp<T>>,
         }
 
@@ -76,7 +76,7 @@ impl_map_op!(SigmoidOp, "SigmoidOp", sigmoid, sigmoid_derivative);
 // elements of the input array.
 macro_rules! impl_map_op_with_parameter {
     ($op_name:ident, $op_name_str:expr, $compute_fn:expr, $grad_fn:expr) => {
-        pub struct $op_name<T: Numeric> {
+        pub(crate) struct $op_name<T: Numeric> {
             input: Rc<dyn GraphOp<T>>,
             parameter: T,
         }

@@ -6,7 +6,7 @@ use std::rc::Rc;
 // Implements `GraphOp` struct for basic arithmetic operations with 2 node inputs.
 macro_rules! impl_struct_op_2_inputs {
     ($op_name:ident) => {
-        pub struct $op_name<T: Numeric> {
+        pub(crate) struct $op_name<T: Numeric> {
             input_1: Rc<dyn GraphOp<T>>,
             input_2: Rc<dyn GraphOp<T>>,
         }
@@ -21,7 +21,7 @@ macro_rules! impl_struct_op_2_inputs {
 // Implements `GraphOp` struct for basic arithmetic operations with 1 node input and a scalar.
 macro_rules! impl_struct_op_1_input_scalar {
     ($op_name:ident) => {
-        pub struct $op_name<T: Numeric> {
+        pub(crate) struct $op_name<T: Numeric> {
             input: Rc<dyn GraphOp<T>>,
             scalar: T,
         }
@@ -325,7 +325,7 @@ impl<'a, T: Numeric> GraphOp<T> for MatMulOp<T> {
     }
 }
 
-pub struct NegOp<T: Numeric> {
+pub(crate) struct NegOp<T: Numeric> {
     input: Rc<dyn GraphOp<T>>,
 }
 impl<T: Numeric> NegOp<T> {

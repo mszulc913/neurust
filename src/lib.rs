@@ -1,4 +1,4 @@
-pub mod graph;
+pub(crate) mod graph;
 pub mod linalg;
 pub mod prelude;
 pub mod tensor;

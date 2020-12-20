@@ -11,7 +11,7 @@ use std::rc::Rc;
 
 // Computational graph's node.
 // TODO: Store shapes in structs.
-pub trait GraphOp<T: Numeric> {
+pub(crate) trait GraphOp<T: Numeric> {
     // Computes value of the operator recursively traversing through the graph
     // with usage of a cache map.
     fn compute(
@@ -155,7 +155,7 @@ impl<T: Numeric> fmt::Debug for dyn GraphOp<T> {
 }
 
 // Provides a wrapper around other node given its reference.
-pub struct WrapperOp<'a, T: Numeric> {
+pub(crate) struct WrapperOp<'a, T: Numeric> {
     input: &'a dyn GraphOp<T>,
 }
 
@@ -199,7 +199,7 @@ impl<'a, T: Numeric> GraphOp<T> for WrapperOp<'a, T> {
 }
 
 // Placeholder for values to be supplied later.
-pub struct Placeholder {
+pub(crate) struct Placeholder {
     pub id: String,
 }
 
@@ -245,7 +245,7 @@ impl<T: Numeric> GraphOp<T> for Placeholder {
 }
 
 // Shared and persistent data stored in a operational memory.
-pub struct Variable<T: Numeric> {
+pub(crate) struct Variable<T: Numeric> {
     data: Rc<RefCell<Array<T>>>,
 }
 

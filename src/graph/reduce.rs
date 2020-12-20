@@ -8,7 +8,7 @@ use std::rc::Rc;
 // Implements `GraphOp` struct for reduction operations.
 macro_rules! impl_struct_reduce_op {
     ($op_name:ident) => {
-        pub struct $op_name<T: Numeric> {
+        pub(crate) struct $op_name<T: Numeric> {
             input: Rc<dyn GraphOp<T>>,
             axis: Option<usize>,
             keep_dims: bool,
