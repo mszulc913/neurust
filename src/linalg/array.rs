@@ -1252,7 +1252,7 @@ impl<T: Numeric> Clone for Array<T> {
     }
 }
 
-/// Represents aslice on a single array dimension.
+/// Represents a slice on a single array dimension.
 #[derive(PartialEq, Debug)]
 pub enum Slice {
     // `x..y` - from to range.

@@ -67,7 +67,7 @@ pub fn reduce_sum<T: Numeric>(
     )))
 }
 
-/// Computes a mean of elements of an array across dimensions.
+/// Computes a mean of elements of a tensor across dimensions.
 ///
 /// If `None` is passed, mean of all array elements is computed.
 ///
