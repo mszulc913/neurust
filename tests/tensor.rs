@@ -1,11 +1,11 @@
 use neurust::linalg::utils::are_arrays_near_equal;
-use neurust::{assert_arrays_rel_eq, get_placeholder, get_variable, Array};
+use neurust::{assert_arrays_rel_eq, Array, Tensor};
 use std::collections::HashMap;
 
 #[test]
 fn test_variable() {
-    let a = get_variable(Array::new(3., vec![2, 3, 2]));
-    let b = get_variable(Array::new(2., vec![2, 2, 4]));
+    let a = Tensor::new_variable(Array::new(3., vec![2, 3, 2]));
+    let b = Tensor::new_variable(Array::new(2., vec![2, 2, 4]));
 
     assert_eq!(a.eval(None), Array::new(3., vec![2, 3, 2]));
     assert_eq!(a.grad(&a, None), Some(Array::new(1., vec![2, 3, 2])));
@@ -14,8 +14,8 @@ fn test_variable() {
 
 #[test]
 fn test_placeholder() {
-    let a = get_placeholder("test_ph".to_owned());
-    let b = get_variable(Array::new(2., vec![2, 2, 4]));
+    let a = Tensor::new_placeholder("test_ph".to_owned());
+    let b = Tensor::new_variable(Array::new(2., vec![2, 2, 4]));
     let value = Array::new(3., vec![2, 2, 4]);
     let mut feed_dict = HashMap::new();
     feed_dict.insert("test_ph".to_owned(), &value);
@@ -31,7 +31,7 @@ fn test_placeholder() {
 #[test]
 #[should_panic]
 fn test_placeholder_not_in_feed_dict() {
-    let a = get_placeholder::<f32>("test_ph".to_owned());
+    let a = Tensor::<f32>::new_placeholder("test_ph".to_owned());
     let feed_dict = HashMap::new();
 
     a.eval(Some(&feed_dict));
@@ -44,8 +44,8 @@ macro_rules! test_tensor_operators {
 
             #[test]
             fn test_operator_eval(){
-                let a = get_variable(Array::new(1., vec![2, 2, 3]));
-                let b = get_variable(Array::new(2., vec![2, 2, 3]));
+                let a = Tensor::new_variable(Array::new(1., vec![2, 2, 3]));
+                let b = Tensor::new_variable(Array::new(2., vec![2, 2, 3]));
 
                 let res = (&a $operator &b).eval(None);
 
@@ -54,8 +54,8 @@ macro_rules! test_tensor_operators {
 
             #[test]
             fn test_operator_eval_consume_left(){
-                let a = get_variable(Array::new(1., vec![2, 2, 3]));
-                let b = get_variable(Array::new(2., vec![2, 2, 3]));
+                let a = Tensor::new_variable(Array::new(1., vec![2, 2, 3]));
+                let b = Tensor::new_variable(Array::new(2., vec![2, 2, 3]));
 
                 let res = (a $operator &b).eval(None);
 
@@ -64,8 +64,8 @@ macro_rules! test_tensor_operators {
 
             #[test]
             fn test_operator_eval_consume_right(){
-                let a = get_variable(Array::new(1., vec![2, 2, 3]));
-                let b = get_variable(Array::new(2., vec![2, 2, 3]));
+                let a = Tensor::new_variable(Array::new(1., vec![2, 2, 3]));
+                let b = Tensor::new_variable(Array::new(2., vec![2, 2, 3]));
 
                 let res = (&a $operator b).eval(None);
 
@@ -74,8 +74,8 @@ macro_rules! test_tensor_operators {
 
             #[test]
             fn test_operator_eval_consume_both(){
-                let a = get_variable(Array::new(1., vec![2, 2, 3]));
-                let b = get_variable(Array::new(2., vec![2, 2, 3]));
+                let a = Tensor::new_variable(Array::new(1., vec![2, 2, 3]));
+                let b = Tensor::new_variable(Array::new(2., vec![2, 2, 3]));
 
                 let res = (a $operator b).eval(None);
 
@@ -84,7 +84,7 @@ macro_rules! test_tensor_operators {
 
             #[test]
             fn test_operator_scalar_left(){
-                let a = get_variable::<f32>(Array::new(1., vec![2, 2, 3]));
+                let a = Tensor::<f32>::new_variable(Array::new(1., vec![2, 2, 3]));
 
                 let res = (2. $operator &a).eval(None);
                 let res_consume = (2. $operator a).eval(None);
@@ -95,7 +95,7 @@ macro_rules! test_tensor_operators {
 
             #[test]
             fn test_operator_scalar_right(){
-                let a = get_variable(Array::new(1., vec![2, 2, 3]));
+                let a = Tensor::new_variable(Array::new(1., vec![2, 2, 3]));
 
                 let res = (&a $operator 2.).eval(None);
                 let res_consume = (a $operator 2.).eval(None);
@@ -106,9 +106,9 @@ macro_rules! test_tensor_operators {
 
             #[test]
             fn test_operator_gradient(){
-                let a = get_variable(Array::new(1., vec![2, 2, 3]));
-                let b = get_variable(Array::new(2., vec![2, 2, 3]));
-                let c = get_variable(Array::new(2., vec![2, 2, 3]));
+                let a = Tensor::new_variable(Array::new(1., vec![2, 2, 3]));
+                let b = Tensor::new_variable(Array::new(2., vec![2, 2, 3]));
+                let c = Tensor::new_variable(Array::new(2., vec![2, 2, 3]));
                 let add = &a $operator &b;
 
                 assert_arrays_rel_eq!(add.grad(&a, None).unwrap(), $result_grad1, 1e-7);
@@ -118,8 +118,8 @@ macro_rules! test_tensor_operators {
 
             #[test]
             fn test_operator_scalar_gradient(){
-                let a = get_variable(Array::new(1., vec![2, 2, 3]));
-                let b = get_variable(Array::new(2., vec![2, 2, 3]));
+                let a = Tensor::new_variable(Array::new(1., vec![2, 2, 3]));
+                let b = Tensor::new_variable(Array::new(2., vec![2, 2, 3]));
                 let add = &a $operator 2.;
 
                 assert_arrays_rel_eq!(add.grad(&a, None).unwrap(), $result_grad1, 1e-7);
@@ -151,9 +151,9 @@ test_tensor_operators!(
 
 #[test]
 fn test_matmul() {
-    let a = get_variable(Array::new(1., vec![2, 3, 2]));
-    let b = get_variable(Array::new(2., vec![2, 2, 4]));
-    let c = get_variable(Array::new(2., vec![2, 2, 4]));
+    let a = Tensor::new_variable(Array::new(1., vec![2, 3, 2]));
+    let b = Tensor::new_variable(Array::new(2., vec![2, 2, 4]));
+    let c = Tensor::new_variable(Array::new(2., vec![2, 2, 4]));
     let matmul = a.matmul(&b);
 
     assert_eq!(matmul.eval(None), Array::new(4., vec![2, 3, 4]));
@@ -167,8 +167,8 @@ mod test_neg {
 
     #[test]
     fn test_neg_operator() {
-        let a = get_variable(Array::new(1., vec![2, 3, 2]));
-        let b = get_variable(Array::new(1., vec![2, 3, 2]));
+        let a = Tensor::new_variable(Array::new(1., vec![2, 3, 2]));
+        let b = Tensor::new_variable(Array::new(1., vec![2, 3, 2]));
         let neg = -&a;
 
         assert_eq!(neg.eval(None), Array::new(-1., vec![2, 3, 2]));
@@ -178,7 +178,7 @@ mod test_neg {
 
     #[test]
     fn test_neg_consume_operator() {
-        let a = get_variable(Array::new(1., vec![2, 3, 2]));
+        let a = Tensor::new_variable(Array::new(1., vec![2, 3, 2]));
         let neg = -a;
 
         assert_eq!(neg.eval(None), Array::new(-1., vec![2, 3, 2]));
@@ -188,15 +188,16 @@ mod test_neg {
 #[test]
 #[rustfmt::skip]
 fn test_complex_example() {
-    let a = get_variable(Array::from_vec(
+    let a = Tensor::new_variable(Array::from_vec(
         vec![2., 3., 4., 5., 10., 12., 2., 6., 12., 10., 23., 12.],
         vec![2, 3, 2])
     );
-    let b = get_variable(Array::new(3., vec![2, 2, 4]));
-    let c = get_placeholder::<f32>("test".to_owned());
+    let b = Tensor::new_variable(Array::new(3., vec![2, 2, 4]));
+    let c = Tensor::new_placeholder("test".to_owned());
     let ph_value = Array::new(17., vec![2, 3, 4]);
     let mut feed_dict = HashMap::new();
     feed_dict.insert("test".to_owned(), &ph_value);
+    b.assign(&Array::new(3., vec![2, 2, 4]));
 
     let result = (a.matmul(&b) + 3.) * &c / 5.;
 

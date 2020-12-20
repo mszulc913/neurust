@@ -66,13 +66,13 @@ A computational graph's node that can be evaluated and differentiated using reve
 ```rust
 use neurust::prelude::*;
 
-let a = get_variable(Array::from_vec(
+let a = Tensor::new_variable(Array::from_vec(
     vec![
         0., 1., 2.,
         3., 4., 5.
     ],
     vec![2, 3]));
-let b = get_variable(Array::from_vec(
+let b = Tensor::new_variable(Array::from_vec(
     vec![
         4., 5., 6.
     ],

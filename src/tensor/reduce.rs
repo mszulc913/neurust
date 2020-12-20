@@ -14,9 +14,9 @@ use std::rc::Rc;
 ///
 /// # Examples
 /// ```
-/// use neurust::{get_variable, Array, reduce_sum};
+/// use neurust::{Tensor, Array, reduce_sum};
 ///
-/// let var = get_variable(Array::from_vec(
+/// let var = Tensor::new_variable(Array::from_vec(
 ///     vec![
 ///         0., 1.,
 ///         2., 3.,
@@ -60,9 +60,11 @@ pub fn reduce_sum<T: Numeric>(
     axis: Option<usize>,
     keep_dims: bool,
 ) -> Tensor<T> {
-    Tensor {
-        op: Rc::new(ReduceSumOp::new(Rc::clone(&tensor.op), axis, keep_dims)),
-    }
+    Tensor::new(Rc::new(ReduceSumOp::new(
+        Rc::clone(&tensor.op),
+        axis,
+        keep_dims,
+    )))
 }
 
 /// Computes a mean of elements of an array across dimensions.
@@ -76,9 +78,9 @@ pub fn reduce_sum<T: Numeric>(
 ///
 /// # Examples
 /// ```
-/// use neurust::{Array, reduce_mean, get_variable};
+/// use neurust::{Array, reduce_mean, Tensor};
 ///
-/// let var = get_variable(Array::from_vec(
+/// let var = Tensor::new_variable(Array::from_vec(
 ///     vec![
 ///         0., 1.,
 ///         2., 3.,
@@ -123,7 +125,9 @@ pub fn reduce_mean<T: Numeric>(
     axis: Option<usize>,
     keep_dims: bool,
 ) -> Tensor<T> {
-    Tensor {
-        op: Rc::new(ReduceMeanOp::new(Rc::clone(&tensor.op), axis, keep_dims)),
-    }
+    Tensor::new(Rc::new(ReduceMeanOp::new(
+        Rc::clone(&tensor.op),
+        axis,
+        keep_dims,
+    )))
 }

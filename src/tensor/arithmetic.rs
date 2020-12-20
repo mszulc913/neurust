@@ -11,48 +11,40 @@ macro_rules! impl_tensor_operators_overload_2_inputs {
         impl<T: Numeric> $op_name<&Tensor<T>> for &Tensor<T> {
             type Output = Tensor<T>;
             fn $op_method_name(self, other: &Tensor<T>) -> Tensor<T> {
-                Tensor {
-                    op: Rc::new($graph_op_name::new(
-                        Rc::clone(&self.op),
-                        Rc::clone(&other.op),
-                    )),
-                }
+                Tensor::new(Rc::new($graph_op_name::new(
+                    Rc::clone(&self.op),
+                    Rc::clone(&other.op),
+                )))
             }
         }
 
         impl<T: Numeric> $op_name<Tensor<T>> for &Tensor<T> {
             type Output = Tensor<T>;
             fn $op_method_name(self, other: Tensor<T>) -> Tensor<T> {
-                Tensor {
-                    op: Rc::new($graph_op_name::new(
-                        Rc::clone(&self.op),
-                        Rc::clone(&other.op),
-                    )),
-                }
+                Tensor::new(Rc::new($graph_op_name::new(
+                    Rc::clone(&self.op),
+                    Rc::clone(&other.op),
+                )))
             }
         }
 
         impl<T: Numeric> $op_name<Tensor<T>> for Tensor<T> {
             type Output = Tensor<T>;
             fn $op_method_name(self, other: Tensor<T>) -> Tensor<T> {
-                Tensor {
-                    op: Rc::new($graph_op_name::new(
-                        Rc::clone(&self.op),
-                        Rc::clone(&other.op),
-                    )),
-                }
+                Tensor::new(Rc::new($graph_op_name::new(
+                    Rc::clone(&self.op),
+                    Rc::clone(&other.op),
+                )))
             }
         }
 
         impl<T: Numeric> $op_name<&Tensor<T>> for Tensor<T> {
             type Output = Tensor<T>;
             fn $op_method_name(self, other: &Tensor<T>) -> Tensor<T> {
-                Tensor {
-                    op: Rc::new($graph_op_name::new(
-                        Rc::clone(&self.op),
-                        Rc::clone(&other.op),
-                    )),
-                }
+                Tensor::new(Rc::new($graph_op_name::new(
+                    Rc::clone(&self.op),
+                    Rc::clone(&other.op),
+                )))
             }
         }
     };
@@ -68,45 +60,35 @@ macro_rules! impl_tensor_operators_overload_with_scalar {
         impl<T: Numeric> $op_name<T> for &Tensor<T> {
             type Output = Tensor<T>;
             fn $op_method_name(self, other: T) -> Tensor<T> {
-                Tensor {
-                    op: Rc::new($graph_op_name::new(Rc::clone(&self.op), other)),
-                }
+                Tensor::new(Rc::new($graph_op_name::new(Rc::clone(&self.op), other)))
             }
         }
 
         impl $op_name<Tensor<f32>> for f32 {
             type Output = Tensor<f32>;
             fn $op_method_name(self, other: Tensor<f32>) -> Tensor<f32> {
-                Tensor {
-                    op: Rc::new($graph_op_name::new(Rc::clone(&other.op), self)),
-                }
+                Tensor::new(Rc::new($graph_op_name::new(Rc::clone(&other.op), self)))
             }
         }
 
         impl $op_name<&Tensor<f32>> for f32 {
             type Output = Tensor<f32>;
             fn $op_method_name(self, other: &Tensor<f32>) -> Tensor<f32> {
-                Tensor {
-                    op: Rc::new($graph_op_name::new(Rc::clone(&other.op), self)),
-                }
+                Tensor::new(Rc::new($graph_op_name::new(Rc::clone(&other.op), self)))
             }
         }
 
         impl $op_name<Tensor<f64>> for f64 {
             type Output = Tensor<f64>;
             fn $op_method_name(self, other: Tensor<f64>) -> Tensor<f64> {
-                Tensor {
-                    op: Rc::new($graph_op_name::new(Rc::clone(&other.op), self)),
-                }
+                Tensor::new(Rc::new($graph_op_name::new(Rc::clone(&other.op), self)))
             }
         }
 
         impl $op_name<&Tensor<f64>> for f64 {
             type Output = Tensor<f64>;
             fn $op_method_name(self, other: &Tensor<f64>) -> Tensor<f64> {
-                Tensor {
-                    op: Rc::new($graph_op_name::new(Rc::clone(&other.op), self)),
-                }
+                Tensor::new(Rc::new($graph_op_name::new(Rc::clone(&other.op), self)))
             }
         }
 
@@ -115,6 +97,7 @@ macro_rules! impl_tensor_operators_overload_with_scalar {
             fn $op_method_name(self, other: T) -> Tensor<T> {
                 Tensor {
                     op: Rc::new($graph_op_name::new(Rc::clone(&self.op), other)),
+                    variable_data: None,
                 }
             }
         }
@@ -131,6 +114,7 @@ impl<T: Numeric> Neg for &Tensor<T> {
     fn neg(self) -> Tensor<T> {
         Tensor {
             op: Rc::new(NegOp::new(Rc::clone(&self.op))),
+            variable_data: None,
         }
     }
 }
@@ -140,6 +124,7 @@ impl<T: Numeric> Neg for Tensor<T> {
     fn neg(self) -> Tensor<T> {
         Tensor {
             op: Rc::new(NegOp::new(Rc::clone(&self.op))),
+            variable_data: None,
         }
     }
 }

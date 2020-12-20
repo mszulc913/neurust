@@ -4,6 +4,7 @@ pub(crate) mod reduce;
 
 use crate::linalg::{Array, Numeric};
 use std::any::{type_name, Any};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
@@ -245,11 +246,11 @@ impl<T: Numeric> GraphOp<T> for Placeholder {
 
 // Shared and persistent data stored in a operational memory.
 pub struct Variable<T: Numeric> {
-    data: Array<T>,
+    data: Rc<RefCell<Array<T>>>,
 }
 
 impl<T: Numeric> Variable<T> {
-    pub fn new(init_value: Array<T>) -> Variable<T> {
+    pub fn new(init_value: Rc<RefCell<Array<T>>>) -> Variable<T> {
         Variable { data: init_value }
     }
 }
@@ -260,7 +261,7 @@ impl<T: Numeric> GraphOp<T> for Variable<T> {
         _: Option<&HashMap<String, &Array<T>>>,
         _: &mut HashMap<usize, Array<T>>,
     ) -> Array<T> {
-        self.data.clone()
+        self.data.borrow().clone()
     }
 
     fn compute_accum_grad(
