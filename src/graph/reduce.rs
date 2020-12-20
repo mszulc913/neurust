@@ -62,7 +62,7 @@ impl<'a, T: Numeric> GraphOp<T> for ReduceSumOp<T> {
         )
     }
 
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -97,7 +97,7 @@ impl<'a, T: Numeric> GraphOp<T> for ReduceMeanOp<T> {
         )
     }
 
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,

@@ -86,7 +86,7 @@ macro_rules! impl_trait_op_1_input_scalar {
 impl_struct_op_2_inputs!(AddOp);
 impl<'a, T: Numeric> GraphOp<T> for AddOp<T> {
     impl_trait_op_2_inputs!(AddOp, "AddOp", +);
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -116,7 +116,7 @@ impl<'a, T: Numeric> GraphOp<T> for AddOp<T> {
 impl_struct_op_2_inputs!(MulOp);
 impl<'a, T: Numeric> GraphOp<T> for MulOp<T> {
     impl_trait_op_2_inputs!(MulOp, "MulOp", *);
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -136,7 +136,7 @@ impl<'a, T: Numeric> GraphOp<T> for MulOp<T> {
 impl_struct_op_2_inputs!(SubOp);
 impl<'a, T: Numeric> GraphOp<T> for SubOp<T> {
     impl_trait_op_2_inputs!(SubOp, "SubOp", -);
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -166,7 +166,7 @@ impl<'a, T: Numeric> GraphOp<T> for SubOp<T> {
 impl_struct_op_2_inputs!(DivOp);
 impl<'a, T: Numeric> GraphOp<T> for DivOp<T> {
     impl_trait_op_2_inputs!(DivOp, "DivOp", /);
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -192,7 +192,7 @@ impl<'a, T: Numeric> GraphOp<T> for DivOp<T> {
 impl_struct_op_1_input_scalar!(AddScalarOp);
 impl<'a, T: Numeric> GraphOp<T> for AddScalarOp<T> {
     impl_trait_op_1_input_scalar!(AddScalarOp, "AddScalarOp", +);
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -215,7 +215,7 @@ impl<'a, T: Numeric> GraphOp<T> for AddScalarOp<T> {
 impl_struct_op_1_input_scalar!(SubScalarOp);
 impl<'a, T: Numeric> GraphOp<T> for SubScalarOp<T> {
     impl_trait_op_1_input_scalar!(SubScalarOp, "SubScalarOp", -);
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -238,7 +238,7 @@ impl<'a, T: Numeric> GraphOp<T> for SubScalarOp<T> {
 impl_struct_op_1_input_scalar!(MulScalarOp);
 impl<'a, T: Numeric> GraphOp<T> for MulScalarOp<T> {
     impl_trait_op_1_input_scalar!(MulScalarOp, "MulScalarOp", *);
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -261,7 +261,7 @@ impl<'a, T: Numeric> GraphOp<T> for MulScalarOp<T> {
 impl_struct_op_1_input_scalar!(DivScalarOp);
 impl<'a, T: Numeric> GraphOp<T> for DivScalarOp<T> {
     impl_trait_op_1_input_scalar!(DivScalarOp, "DivScalarOp", /);
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -291,7 +291,7 @@ impl<'a, T: Numeric> GraphOp<T> for MatMulOp<T> {
         (&self.input_1.value(feed_dict, cache)).matmul(&self.input_2.value(feed_dict, cache))
     }
 
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -343,7 +343,7 @@ impl<'a, T: Numeric> GraphOp<T> for NegOp<T> {
         self.input.value(feed_dict, cache).neg()
     }
 
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,

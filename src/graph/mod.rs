@@ -22,7 +22,7 @@ pub(crate) trait GraphOp<T: Numeric> {
 
     // Computes gradient of some variable `X` w.r.t. `dependant_node` given gradient
     // of `X` w.r.t. `self` using chain rule.
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -76,19 +76,19 @@ pub(crate) trait GraphOp<T: Numeric> {
         feed_dict: Option<&HashMap<String, &Array<T>>>,
     ) -> Option<Array<T>> {
         let mut compute_cache = HashMap::<usize, Array<T>>::new();
-        let mut accum_grad_map = HashMap::<usize, Array<T>>::new();
+        let mut accumm_grad_map = HashMap::<usize, Array<T>>::new();
         let mut stack = Vec::<(Rc<dyn GraphOp<T>>, Rc<dyn GraphOp<T>>)>::new();
 
-        let accum_grad_self = Array::<T>::new(
+        let accumm_grad_self = Array::<T>::new(
             T::one(),
             self.compute(feed_dict, &mut compute_cache).get_shape(),
         );
         if self.ref_as_usize() == node.ref_as_usize() {
-            return Some(accum_grad_self);
+            return Some(accumm_grad_self);
         }
 
         let phantom_parent: Rc<dyn GraphOp<T>> = Rc::new(WrapperOp::<T>::new(self.as_trait()));
-        accum_grad_map.insert(phantom_parent.ref_as_usize(), accum_grad_self);
+        accumm_grad_map.insert(phantom_parent.ref_as_usize(), accumm_grad_self);
 
         let children = self.get_inputs().unwrap_or_default();
         for child in children {
@@ -96,17 +96,17 @@ pub(crate) trait GraphOp<T: Numeric> {
         }
 
         while let Some((current_node, current_parrent)) = stack.pop() {
-            let parrent_grad = current_parrent.compute_accum_grad(
+            let parrent_grad = current_parrent.compute_accumm_grad(
                 feed_dict,
                 &mut compute_cache,
                 current_node.as_ref(),
-                &accum_grad_map[&current_parrent.ref_as_usize()],
+                &accumm_grad_map[&current_parrent.ref_as_usize()],
             );
             if let Some(grad) = parrent_grad {
-                if let Some(accum_grad) = accum_grad_map.get_mut(&current_node.ref_as_usize()) {
-                    *accum_grad += &grad;
+                if let Some(accumm_grad) = accumm_grad_map.get_mut(&current_node.ref_as_usize()) {
+                    *accumm_grad += &grad;
                 } else {
-                    accum_grad_map.insert(current_node.ref_as_usize(), grad);
+                    accumm_grad_map.insert(current_node.ref_as_usize(), grad);
                 }
             }
             let children = current_node.get_inputs().unwrap_or_default();
@@ -116,7 +116,7 @@ pub(crate) trait GraphOp<T: Numeric> {
                 }
             }
         }
-        accum_grad_map.remove(&node.ref_as_usize())
+        accumm_grad_map.remove(&node.ref_as_usize())
     }
 
     // Returns reference to a particular trait object as `GraphOp<T>`. This is needed
@@ -174,7 +174,7 @@ impl<'a, T: Numeric> GraphOp<T> for WrapperOp<'a, T> {
         self.input.value(feed_dict, compute_cache)
     }
 
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         feed_dict: Option<&HashMap<String, &Array<T>>>,
         compute_cache: &mut HashMap<usize, Array<T>>,
@@ -182,7 +182,7 @@ impl<'a, T: Numeric> GraphOp<T> for WrapperOp<'a, T> {
         grad: &Array<T>,
     ) -> Option<Array<T>> {
         self.input
-            .compute_accum_grad(feed_dict, compute_cache, dependant_node, grad)
+            .compute_accumm_grad(feed_dict, compute_cache, dependant_node, grad)
     }
 
     fn get_name(&self) -> &str {
@@ -225,7 +225,7 @@ impl<T: Numeric> GraphOp<T> for Placeholder {
         }
     }
 
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         _: Option<&HashMap<String, &Array<T>>>,
         _: &mut HashMap<usize, Array<T>>,
@@ -264,7 +264,7 @@ impl<T: Numeric> GraphOp<T> for Variable<T> {
         self.data.borrow().clone()
     }
 
-    fn compute_accum_grad(
+    fn compute_accumm_grad(
         &self,
         _: Option<&HashMap<String, &Array<T>>>,
         _: &mut HashMap<usize, Array<T>>,

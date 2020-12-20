@@ -37,7 +37,7 @@ macro_rules! impl_map_op {
                 Some(vec![Rc::clone(&self.input)])
             }
 
-            fn compute_accum_grad(
+            fn compute_accumm_grad(
                 &self,
                 feed_dict: Option<&HashMap<String, &Array<T>>>,
                 compute_cache: &mut HashMap<usize, Array<T>>,
@@ -106,7 +106,7 @@ macro_rules! impl_map_op_with_parameter {
                 Some(vec![Rc::clone(&self.input)])
             }
 
-            fn compute_accum_grad(
+            fn compute_accumm_grad(
                 &self,
                 feed_dict: Option<&HashMap<String, &Array<T>>>,
                 compute_cache: &mut HashMap<usize, Array<T>>,
