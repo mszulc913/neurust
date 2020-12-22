@@ -1,4 +1,4 @@
-use crate::graph::math::{CosOp, LnOp, LogOp, PowOp, SigmoidOp, SinOp};
+use crate::graph::math::{CosOp, LnOp, LogOp, PowOp, ReLUOp, SigmoidOp, SinOp, TanhOp};
 use crate::linalg::Numeric;
 use crate::Tensor;
 use std::rc::Rc;
@@ -25,4 +25,12 @@ pub fn pow<T: Numeric>(tensor: &Tensor<T>, pow: T) -> Tensor<T> {
 
 pub fn log<T: Numeric>(tensor: &Tensor<T>, base: T) -> Tensor<T> {
     Tensor::new(Rc::new(LogOp::new(Rc::clone(&tensor.op), base)))
+}
+
+pub fn tanh<T: Numeric>(tensor: &Tensor<T>) -> Tensor<T> {
+    Tensor::new(Rc::new(TanhOp::new(Rc::clone(&tensor.op))))
+}
+
+pub fn relu<T: Numeric>(tensor: &Tensor<T>) -> Tensor<T> {
+    Tensor::new(Rc::new(ReLUOp::new(Rc::clone(&tensor.op))))
 }

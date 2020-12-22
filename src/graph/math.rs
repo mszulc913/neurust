@@ -67,9 +67,20 @@ fn sigmoid_derivative<T: Numeric>(x: T) -> T {
     sigmoid_result * (T::one() - sigmoid_result)
 }
 
+fn relu_derivative<T: Numeric>(x: T) -> T {
+    if x > T::zero() {
+        T::one()
+    } else {
+        T::zero()
+    }
+}
+
 impl_map_op!(SinOp, "SinOp", |x| x.sin(), |x| x.cos());
 impl_map_op!(CosOp, "CosOp", |x| x.cos(), |x| -x.sin());
 impl_map_op!(LnOp, "LnOp", |x| x.ln(), |x| T::one() / x);
+impl_map_op!(TanhOp, "TanhOp", |x| x.tanh(), |x| T::one()
+    - (x.tanh().powi(2)));
+impl_map_op!(ReLUOp, "ReLUOp", |x| x.max(T::zero()), relu_derivative);
 impl_map_op!(SigmoidOp, "SigmoidOp", sigmoid, sigmoid_derivative);
 
 // Defines `GraphOp` for operators that applies some parametrized function to all
