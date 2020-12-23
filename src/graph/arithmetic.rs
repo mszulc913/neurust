@@ -1,4 +1,5 @@
 use crate::graph::GraphOp;
+use crate::linalg::utils::check_shapes_matmul_arrays;
 use crate::linalg::{Array, Numeric};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -9,10 +10,23 @@ macro_rules! impl_struct_op_2_inputs {
         pub(crate) struct $op_name<T: Numeric> {
             input_1: Rc<dyn GraphOp<T>>,
             input_2: Rc<dyn GraphOp<T>>,
+            shape: Vec<usize>,
         }
         impl<T: Numeric> $op_name<T> {
             pub fn new(input_1: Rc<dyn GraphOp<T>>, input_2: Rc<dyn GraphOp<T>>) -> $op_name<T> {
-                $op_name { input_1, input_2 }
+                let shape_1 = input_1.shape();
+                let shape_2 = input_2.shape();
+                if shape_1 != shape_2 {
+                    panic!(
+                        "Shapes of both inputs should be the same! Got: {:?} and {:?}",
+                        shape_1, shape_2
+                    )
+                }
+                $op_name {
+                    input_1,
+                    input_2,
+                    shape: shape_1,
+                }
             }
         }
     };
@@ -24,10 +38,16 @@ macro_rules! impl_struct_op_1_input_scalar {
         pub(crate) struct $op_name<T: Numeric> {
             input: Rc<dyn GraphOp<T>>,
             scalar: T,
+            shape: Vec<usize>,
         }
         impl<T: Numeric> $op_name<T> {
             pub fn new(input: Rc<dyn GraphOp<T>>, scalar: T) -> $op_name<T> {
-                $op_name { input, scalar }
+                let shape = input.shape();
+                $op_name {
+                    input,
+                    scalar,
+                    shape,
+                }
             }
         }
     };
@@ -55,6 +75,10 @@ macro_rules! impl_trait_op_2_inputs {
         fn as_trait(&self) -> &dyn GraphOp<T> {
             self as &dyn GraphOp<T>
         }
+
+        fn shape(&self) -> Vec<usize> {
+            self.shape.clone()
+        }
     };
 }
 
@@ -79,6 +103,10 @@ macro_rules! impl_trait_op_1_input_scalar {
 
         fn as_trait(&self) -> &dyn GraphOp<T> {
             self as &dyn GraphOp<T>
+        }
+
+        fn shape(&self) -> Vec<usize> {
+            self.shape.clone()
         }
     };
 }
@@ -281,7 +309,27 @@ impl<'a, T: Numeric> GraphOp<T> for DivScalarOp<T> {
     }
 }
 
-impl_struct_op_2_inputs!(MatMulOp);
+pub(crate) struct MatMulOp<T: Numeric> {
+    input_1: Rc<dyn GraphOp<T>>,
+    input_2: Rc<dyn GraphOp<T>>,
+    shape: Vec<usize>,
+}
+
+impl<T: Numeric> MatMulOp<T> {
+    pub fn new(input_1: Rc<dyn GraphOp<T>>, input_2: Rc<dyn GraphOp<T>>) -> MatMulOp<T> {
+        let shape_1 = input_1.shape();
+        let shape_2 = input_2.shape();
+        check_shapes_matmul_arrays(&shape_1, &shape_2);
+        let mut new_shape = shape_1[..shape_1.len() - 1].to_vec();
+        new_shape.push(*shape_2.last().unwrap());
+        MatMulOp {
+            input_1,
+            input_2,
+            shape: new_shape,
+        }
+    }
+}
+
 impl<'a, T: Numeric> GraphOp<T> for MatMulOp<T> {
     fn compute(
         &self,
@@ -323,14 +371,20 @@ impl<'a, T: Numeric> GraphOp<T> for MatMulOp<T> {
     fn as_trait(&self) -> &dyn GraphOp<T> {
         self as &dyn GraphOp<T>
     }
+
+    fn shape(&self) -> Vec<usize> {
+        self.shape.clone()
+    }
 }
 
 pub(crate) struct NegOp<T: Numeric> {
     input: Rc<dyn GraphOp<T>>,
+    shape: Vec<usize>,
 }
 impl<T: Numeric> NegOp<T> {
     pub fn new(input: Rc<dyn GraphOp<T>>) -> NegOp<T> {
-        NegOp { input }
+        let shape = input.shape();
+        NegOp { input, shape }
     }
 }
 
@@ -372,5 +426,9 @@ impl<'a, T: Numeric> GraphOp<T> for NegOp<T> {
 
     fn as_trait(&self) -> &dyn GraphOp<T> {
         self as &dyn GraphOp<T>
+    }
+
+    fn shape(&self) -> Vec<usize> {
+        self.shape.clone()
     }
 }

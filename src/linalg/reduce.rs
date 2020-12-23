@@ -1,39 +1,7 @@
+use crate::linalg::utils::get_shape_after_reduce;
 use crate::linalg::Numeric;
 use crate::Array;
 use num::cast;
-
-fn check_reduce_axis<T: Numeric>(array: &Array<T>, axis: Option<usize>) {
-    if let Some(axis_val) = axis {
-        let shape = array.get_shape();
-        if axis_val >= shape.len() {
-            panic!(
-                "Invalid reduction dimension! Got shape: {:?} and dimension: {}.",
-                shape, axis_val
-            )
-        }
-    }
-}
-
-fn get_shape_after_reduce<T: Numeric>(
-    array: &Array<T>,
-    axis: Option<usize>,
-    keep_dims: bool,
-) -> Vec<usize> {
-    check_reduce_axis(array, axis);
-    if let Some(axis_val) = axis {
-        let mut shape = array.get_shape();
-        if keep_dims {
-            shape[axis_val] = 1;
-        } else {
-            shape.remove(axis_val);
-        }
-        shape
-    } else if keep_dims {
-        vec![1; array.get_shape().len()]
-    } else {
-        vec![1]
-    }
-}
 
 /// Reduces given dimension to a single value by applying
 /// *reducer* function to the data.
@@ -95,7 +63,7 @@ pub fn reduce<T: Numeric>(
     axis: Option<usize>,
     keep_dims: bool,
 ) -> Array<T> {
-    let new_shape = get_shape_after_reduce(array, axis, keep_dims);
+    let new_shape = get_shape_after_reduce(&array.get_shape(), axis, keep_dims);
     let mut new_data = vec![T::zero(); new_shape.iter().product()];
 
     if let Some(axis_val) = axis {

@@ -1,4 +1,5 @@
 use crate::graph::GraphOp;
+use crate::linalg::utils::get_shape_after_reduce;
 use crate::linalg::{reduce_mean, reduce_sum, Numeric};
 use crate::Array;
 use num::cast;
@@ -12,17 +13,21 @@ macro_rules! impl_struct_reduce_op {
             input: Rc<dyn GraphOp<T>>,
             axis: Option<usize>,
             keep_dims: bool,
+            shape: Vec<usize>,
         }
+
         impl<T: Numeric> $op_name<T> {
             pub fn new(
                 input: Rc<dyn GraphOp<T>>,
                 axis: Option<usize>,
                 keep_dims: bool,
             ) -> $op_name<T> {
+                let shape = input.shape();
                 $op_name {
                     input,
                     axis,
                     keep_dims,
+                    shape: get_shape_after_reduce(&shape, axis, keep_dims),
                 }
             }
         }
@@ -43,6 +48,10 @@ macro_rules! impl_trait_reduce_op {
 
         fn as_trait(&self) -> &dyn GraphOp<T> {
             self as &dyn GraphOp<T>
+        }
+
+        fn shape(&self) -> Vec<usize> {
+            self.shape.clone()
         }
     };
 }

@@ -169,6 +169,40 @@ pub(crate) fn transpose_2d_matrix_slices<T: Numeric>(
     }
 }
 
+// Checks if given reduce axis is valid for given shape vector.
+fn check_reduce_axis(shape: &[usize], axis: Option<usize>) {
+    if let Some(axis_val) = axis {
+        if axis_val >= shape.len() {
+            panic!(
+                "Invalid reduction dimension! Got shape: {:?} and dimension: {}.",
+                shape, axis_val
+            )
+        }
+    }
+}
+
+// Returns shape vector after applying reduce operator.
+pub(crate) fn get_shape_after_reduce(
+    shape: &[usize],
+    axis: Option<usize>,
+    keep_dims: bool,
+) -> Vec<usize> {
+    check_reduce_axis(shape, axis);
+    if let Some(axis_val) = axis {
+        let mut new_shape = shape.to_vec();
+        if keep_dims {
+            new_shape[axis_val] = 1;
+        } else {
+            new_shape.remove(axis_val);
+        }
+        new_shape
+    } else if keep_dims {
+        vec![1; shape.len()]
+    } else {
+        vec![1]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     pub use super::*;
@@ -238,5 +272,30 @@ mod tests {
         let b = Array::from_vec(vec![0., 0.000001, 1., 1.], vec![2, 2]);
 
         assert_arrays_rel_eq!(a, b, 1e-7)
+    }
+
+    #[test]
+    fn test_get_shape_after_reduce() {
+        assert_eq!(
+            vec![2, 2],
+            get_shape_after_reduce(&[2, 3, 2], Some(1), false)
+        );
+        assert_eq!(
+            vec![2, 1, 2],
+            get_shape_after_reduce(&[2, 3, 2], Some(1), true)
+        );
+        assert_eq!(
+            vec![3, 2],
+            get_shape_after_reduce(&[2, 3, 2], Some(0), false)
+        );
+        assert_eq!(
+            vec![2, 3],
+            get_shape_after_reduce(&[2, 3, 2], Some(2), false)
+        );
+        assert_eq!(vec![1], get_shape_after_reduce(&[2, 3, 2], None, false));
+        assert_eq!(
+            vec![1, 1, 1],
+            get_shape_after_reduce(&[2, 3, 2], None, true)
+        );
     }
 }

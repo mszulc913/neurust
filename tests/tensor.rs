@@ -14,7 +14,7 @@ fn test_variable() {
 
 #[test]
 fn test_placeholder() {
-    let a = Tensor::new_placeholder("test_ph".to_owned());
+    let a = Tensor::new_placeholder("test_ph".to_owned(), vec![2, 2, 4]);
     let b = Tensor::new_variable(Array::new(2., vec![2, 2, 4]));
     let value = Array::new(3., vec![2, 2, 4]);
     let mut feed_dict = HashMap::new();
@@ -31,8 +31,19 @@ fn test_placeholder() {
 #[test]
 #[should_panic]
 fn test_placeholder_not_in_feed_dict() {
-    let a = Tensor::<f32>::new_placeholder("test_ph".to_owned());
+    let a = Tensor::<f32>::new_placeholder("test_ph".to_owned(), vec![2, 2]);
     let feed_dict = HashMap::new();
+
+    a.eval(Some(&feed_dict));
+}
+
+#[test]
+#[should_panic]
+fn test_placeholder_invalid_shape() {
+    let a = Tensor::<f32>::new_placeholder("test_ph".to_owned(), vec![2, 2, 3]);
+    let value = Array::new(3., vec![2, 2, 4]);
+    let mut feed_dict = HashMap::new();
+    feed_dict.insert("test_ph".to_owned(), &value);
 
     a.eval(Some(&feed_dict));
 }
@@ -193,7 +204,7 @@ fn test_complex_example() {
         vec![2, 3, 2])
     );
     let b = Tensor::new_variable(Array::new(3., vec![2, 2, 4]));
-    let c = Tensor::new_placeholder("test".to_owned());
+    let c = Tensor::new_placeholder("test".to_owned(), vec![2, 3, 4]);
     let ph_value = Array::new(17., vec![2, 3, 4]);
     let mut feed_dict = HashMap::new();
     feed_dict.insert("test".to_owned(), &ph_value);

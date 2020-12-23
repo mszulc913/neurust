@@ -17,6 +17,10 @@ use std::rc::Rc;
 /// (*backward pass*). In current version of the library all tensors should be
 /// of the same type `T` in order to be placed in the same computational graph.
 ///
+/// Computational graphs are being defined by applying functions and overloaded
+/// Rust operators to tensors. Note that the library will panic if shapes of
+/// used tensors won't be valid in a context of a specific operation.
+///
 /// * `op` - Shared reference to a computational graph node.
 /// * `variable_data` - Shared reference to stored variable operator's data.
 /// This is `None` for tensors with `op` field other than `Variable`.
@@ -33,19 +37,34 @@ impl<T: Numeric> Tensor<T> {
         }
     }
 
+    /// Returns the shape of a tensor (shape of the output array after evaluation).
+    ///
+    /// # Examples
+    /// ```
+    /// use neurust::prelude::*;
+    ///
+    /// let a = Tensor::new_variable(Array::from_vec(vec![0., 1., 2.], vec![1, 3]));
+    ///
+    /// assert_eq!(a.shape(), vec![1, 3]);
+    /// ```
+    pub fn shape(&self) -> Vec<usize> {
+        self.op.shape()
+    }
+
     /// Returns new *placeholder* Tensor.
     ///
-    /// Placeholders are tensors without any data at initialization step.
-    /// Instead, the data should be provided later in `feed_dict`.
+    /// Placeholders are tensors without any data at the initialization step.
+    /// Instead, the data should provided later, when the tensor is coputed.
     ///
     /// * `id` - Unique name of the placeholder.
+    /// * `shape` - Shape vector.
     ///
     /// # Examples
     /// ```
     /// use neurust::prelude::*;
     /// use std::collections::HashMap;
     ///
-    /// let a = Tensor::new_placeholder("some_value".to_string());
+    /// let a = Tensor::new_placeholder("some_value".to_string(), vec![1, 3]);
     /// let a_value = Array::from_vec(vec![0., 1., 2.], vec![1, 3]);
     /// let mut feed_dict = HashMap::new();
     /// feed_dict.insert(
@@ -58,9 +77,9 @@ impl<T: Numeric> Tensor<T> {
     ///     Array::from_vec(vec![0., 1., 2.], vec![1, 3])
     /// )
     /// ```
-    pub fn new_placeholder(id: String) -> Tensor<T> {
+    pub fn new_placeholder(id: String, shape: Vec<usize>) -> Tensor<T> {
         Tensor {
-            op: Rc::new(Placeholder::new(id)),
+            op: Rc::new(Placeholder::new(id, shape)),
             variable_data: None,
         }
     }

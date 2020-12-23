@@ -10,11 +10,13 @@ macro_rules! impl_map_op {
     ($op_name:ident, $op_name_str:expr, $compute_fn:expr, $grad_fn:expr) => {
         pub(crate) struct $op_name<T: Numeric> {
             input: Rc<dyn GraphOp<T>>,
+            shape: Vec<usize>,
         }
 
         impl<T: Numeric> $op_name<T> {
             pub fn new(input: Rc<dyn GraphOp<T>>) -> $op_name<T> {
-                $op_name { input }
+                let shape = input.shape();
+                $op_name { input, shape }
             }
         }
 
@@ -54,6 +56,10 @@ macro_rules! impl_map_op {
             fn as_trait(&self) -> &dyn GraphOp<T> {
                 self as &dyn GraphOp<T>
             }
+
+            fn shape(&self) -> Vec<usize> {
+                self.shape.clone()
+            }
         }
     };
 }
@@ -90,11 +96,17 @@ macro_rules! impl_map_op_with_parameter {
         pub(crate) struct $op_name<T: Numeric> {
             input: Rc<dyn GraphOp<T>>,
             parameter: T,
+            shape: Vec<usize>,
         }
 
         impl<T: Numeric> $op_name<T> {
             pub fn new(input: Rc<dyn GraphOp<T>>, parameter: T) -> $op_name<T> {
-                $op_name { input, parameter }
+                let shape = input.shape();
+                $op_name {
+                    input,
+                    parameter,
+                    shape,
+                }
             }
         }
 
@@ -138,6 +150,10 @@ macro_rules! impl_map_op_with_parameter {
 
             fn as_trait(&self) -> &dyn GraphOp<T> {
                 self as &dyn GraphOp<T>
+            }
+
+            fn shape(&self) -> Vec<usize> {
+                self.shape.clone()
             }
         }
     };

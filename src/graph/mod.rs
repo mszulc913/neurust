@@ -9,6 +9,12 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
+fn check_tensor_shape_non_empty(shape: &[usize]) {
+    if shape.is_empty() {
+        panic!("Shape vector cannot be empty! Got: {:?}", shape)
+    }
+}
+
 // Computational graph's node.
 // TODO: Store shapes in structs.
 pub(crate) trait GraphOp<T: Numeric> {
@@ -122,6 +128,9 @@ pub(crate) trait GraphOp<T: Numeric> {
     // Returns reference to a particular trait object as `GraphOp<T>`. This is needed
     // to provide 'gradient()' default implementation.
     fn as_trait(&self) -> &dyn GraphOp<T>;
+
+    // Returns shape of the output array.
+    fn shape(&self) -> Vec<usize>;
 }
 
 impl<T: Numeric> PartialEq for dyn GraphOp<T> {
@@ -157,11 +166,15 @@ impl<T: Numeric> fmt::Debug for dyn GraphOp<T> {
 // Provides a wrapper around other node given its reference.
 pub(crate) struct WrapperOp<'a, T: Numeric> {
     input: &'a dyn GraphOp<T>,
+    shape: Vec<usize>,
 }
 
 impl<'a, T: Numeric> WrapperOp<'a, T> {
     pub fn new(input: &dyn GraphOp<T>) -> WrapperOp<T> {
-        WrapperOp { input }
+        WrapperOp {
+            input,
+            shape: input.shape(),
+        }
     }
 }
 
@@ -196,16 +209,22 @@ impl<'a, T: Numeric> GraphOp<T> for WrapperOp<'a, T> {
     fn as_trait(&self) -> &dyn GraphOp<T> {
         self as &dyn GraphOp<T>
     }
+
+    fn shape(&self) -> Vec<usize> {
+        self.shape.clone()
+    }
 }
 
 // Placeholder for values to be supplied later.
 pub(crate) struct Placeholder {
-    pub id: String,
+    id: String,
+    shape: Vec<usize>,
 }
 
 impl Placeholder {
-    pub fn new(id: String) -> Placeholder {
-        Placeholder { id }
+    pub fn new(id: String, shape: Vec<usize>) -> Placeholder {
+        check_tensor_shape_non_empty(&shape);
+        Placeholder { id, shape }
     }
 }
 
@@ -219,6 +238,13 @@ impl<T: Numeric> GraphOp<T> for Placeholder {
             .expect("Missing feed_dict argument. There are placeholder tensors in the graph!")
             .get(&self.id)
         {
+            let value_shape = value.get_shape();
+            if self.shape != value_shape {
+                panic!(
+                    "Value given for placeholder: {} has invalid shape!. Got: {:?}, expected: {:?}",
+                    self.id, value_shape, self.shape
+                )
+            }
             (*value).clone()
         } else {
             panic!("Value not found in feed_dict: {}", self.id)
@@ -242,16 +268,26 @@ impl<T: Numeric> GraphOp<T> for Placeholder {
     fn as_trait(&self) -> &dyn GraphOp<T> {
         self as &dyn GraphOp<T>
     }
+
+    fn shape(&self) -> Vec<usize> {
+        self.shape.clone()
+    }
 }
 
 // Shared and persistent data stored in a operational memory.
 pub(crate) struct Variable<T: Numeric> {
     data: Rc<RefCell<Array<T>>>,
+    shape: Vec<usize>,
 }
 
 impl<T: Numeric> Variable<T> {
     pub fn new(init_value: Rc<RefCell<Array<T>>>) -> Variable<T> {
-        Variable { data: init_value }
+        let shape = init_value.borrow().get_shape();
+        check_tensor_shape_non_empty(&shape);
+        Variable {
+            data: init_value,
+            shape,
+        }
     }
 }
 
@@ -280,5 +316,9 @@ impl<T: Numeric> GraphOp<T> for Variable<T> {
 
     fn as_trait(&self) -> &dyn GraphOp<T> {
         self as &dyn GraphOp<T>
+    }
+
+    fn shape(&self) -> Vec<usize> {
+        self.shape.clone()
     }
 }
