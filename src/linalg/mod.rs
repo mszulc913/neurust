@@ -1,5 +1,6 @@
 mod array;
 mod array_view;
+mod broadcast;
 mod matmul;
 mod reduce;
 pub mod utils;

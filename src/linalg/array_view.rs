@@ -45,7 +45,7 @@ impl<'a, T: Numeric> ArrayView<'a, T> {
     /// ```
     pub fn to_array(&self) -> Array<T> {
         let mut data: Vec<T> = Vec::new();
-        let mut curr_idx = vec![0 as usize; self.shape.len()];
+        let mut curr_idx = vec![0; self.shape.len()];
 
         let shape_len = curr_idx.len();
         let mut new_shape = Vec::new();

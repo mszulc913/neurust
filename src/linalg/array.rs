@@ -1,9 +1,8 @@
 use super::array_view::ArrayView;
-use super::utils::{
-    check_shape_positive, check_shapes_matmul_arrays, check_shapes_the_same,
-    transpose_2d_matrix_slices,
-};
+use super::utils::{check_shape_positive, transpose_2d_matrix_slices};
+use crate::linalg::broadcast::BroadcastIterator;
 use crate::linalg::matmul::matmul_2d_matrix_slices;
+use crate::linalg::utils::{get_shape_after_broadcast, get_shape_after_broadcast_matmul};
 use crate::linalg::Numeric;
 use std::fmt;
 use std::ops::{
@@ -12,6 +11,8 @@ use std::ops::{
 };
 
 /// N-dimensional array.
+///
+/// Supports overloaded arithmetic operators and broadcasting operands.
 ///
 /// * `shape` - `Vec<usize>` with matrix' shape. For example 2D matrix has a shape of [x, y].
 /// * `data` - `Vec<T>` with matrix' data.
@@ -194,19 +195,45 @@ impl<T: Numeric> Array<T> {
     }
 
     // Creates a new array with elements being a function of paired elements
-    // from current array and from some other array.
+    // from current array and from other array. Operation can be broadcasted.
     fn compute_elementwise_with_other_array(&self, other: &Array<T>, f: fn(T, T) -> T) -> Array<T> {
-        check_shapes_the_same(&self.shape, &other.shape);
-        let mut data = self.data.clone();
-        let shape = self.shape.clone();
-        for (elem, elem_other) in data.iter_mut().zip(other.data.iter()) {
-            *elem = f(*elem, *elem_other);
-        }
+        let shape = get_shape_after_broadcast(&self.shape, &other.shape);
+        let mut data = vec![T::zero(); shape.iter().product()];
+
+        self.compute_elementwise_with_other_array_on_mem_buffer(other, f, &shape, &mut data);
+
         Array { shape, data }
     }
 
+    // Computes result of applying some function in a broadcasted way to given memory buffer.
+    fn compute_elementwise_with_other_array_on_mem_buffer(
+        &self,
+        other: &Array<T>,
+        f: fn(T, T) -> T,
+        shape: &[usize],
+        buff: &mut Vec<T>,
+    ) {
+        let mut trailing_dims = 0;
+        for (&x, &y) in self.shape.iter().rev().zip(other.shape.iter().rev()) {
+            if x == y {
+                trailing_dims += 1
+            } else {
+                break;
+            }
+        }
+
+        let slice_len: usize = shape[(shape.len() - trailing_dims)..].iter().product();
+        for (i, (slice1, slice2)) in BroadcastIterator::new(self, other, trailing_dims).enumerate()
+        {
+            let output_slice = buff[(slice_len * i)..(slice_len * (i + 1))].as_mut();
+            for (j, (elem1, elem2)) in slice1.iter().zip(slice2.iter()).enumerate() {
+                *output_slice.get_mut(j).unwrap() = f(*elem1, *elem2);
+            }
+        }
+    }
+
     // Creates a new array with elements being a function of elements
-    // from current array and a scalar value.
+    // from current array and a scalar value. Operation can be broadcasted.
     fn compute_elementwise_with_scalar(&self, other: T, f: fn(T, T) -> T) -> Array<T> {
         let mut data = self.data.clone();
         let shape = self.shape.clone();
@@ -281,10 +308,13 @@ impl<T: Numeric> Array<T> {
     // Updates array's elements to be a function of paired elements
     // from the array and from some other Array.
     fn assign_compute_elementwise_with_other_array(&mut self, other: &Array<T>, f: fn(T, T) -> T) {
-        check_shapes_the_same(&self.shape, &other.shape);
-        for i in 0..self.data.len() {
-            self.data[i] = f(self.data[i], other.data[i]);
-        }
+        let shape = get_shape_after_broadcast(&self.shape, &other.shape);
+        let mut data = vec![T::zero(); shape.iter().product()];
+
+        self.compute_elementwise_with_other_array_on_mem_buffer(other, f, &shape, &mut data);
+
+        self.data = data;
+        self.shape = shape;
     }
 
     // Updates array's elements to be a function of elements from an array and a scalar value.
@@ -351,7 +381,7 @@ impl<T: Numeric> Array<T> {
     ///
     /// * `other` - Other array to be added.
     ///
-    /// **Panics** if both arrays don't have he same shape.
+    /// **Panics** if both arrays don't have valid shapes in terms of array broadcasting.
     ///
     /// # Examples
     /// ```
@@ -416,7 +446,7 @@ impl<T: Numeric> Array<T> {
     ///
     /// * `other` - Other `Array` to be subtracted.
     ///
-    /// **Panics** if both arrays don't have he same shape.
+    /// **Panics** if both arrays don't have valid shapes in terms of array broadcasting.
     ///
     /// # Examples
     /// ```
@@ -476,7 +506,7 @@ impl<T: Numeric> Array<T> {
     ///
     /// * `other` - Second array.
     ///
-    /// **Panics** if both arrays don't have the same shape.
+    /// **Panics** if both arrays don't have valid shapes in terms of array broadcasting.
     ///
     /// # Examples
     /// ```
@@ -536,7 +566,7 @@ impl<T: Numeric> Array<T> {
     ///
     /// * `other` - Second array.
     ///
-    /// **Panics** if both arrays don't have he same shape.
+    /// **Panics** if both arrays don't have valid shapes in terms of array broadcasting.
     ///
     /// # Examples
     /// ```
@@ -596,7 +626,7 @@ impl<T: Numeric> Array<T> {
     ///
     /// * `other` - Other array to be added.
     ///
-    /// **Panics** if both arrays don't have he same shape.
+    /// **Panics** if both arrays don't have valid shapes in terms of array broadcasting.
     ///
     /// # Examples
     /// ```
@@ -656,7 +686,7 @@ impl<T: Numeric> Array<T> {
     ///
     /// * `other` - Other array to be subtracted.
     ///
-    /// **Panics** if both arrays don't have he same shape.
+    /// **Panics** if both arrays don't have valid shapes in terms of array broadcasting.
     ///
     /// # Examples
     /// ```
@@ -717,7 +747,7 @@ impl<T: Numeric> Array<T> {
     ///
     /// * `other` - Second array.
     ///
-    /// **Panics** if both arrays don't have he same shape.
+    /// **Panics** if both arrays don't have valid shapes in terms of array broadcasting.
     ///
     /// # Examples
     /// ```
@@ -777,7 +807,7 @@ impl<T: Numeric> Array<T> {
     ///
     /// * `other` - Second array.
     ///
-    /// **Panics** if both arrays don't have he same shape.
+    /// **Panics** if both arrays don't have valid shapes in terms of array broadcasting.
     ///
     /// # Examples
     /// ```
@@ -833,19 +863,20 @@ impl<T: Numeric> Array<T> {
         self.assign_compute_elementwise_with_scalar(other, |x, y| x / y)
     }
 
-    /// Performs matrix multiplication of two mutlidimensional arrays.
+    /// Computes matrix product of two mutlidimensional arrays.
     ///
     /// Arrays can be multiplied only if:
-    /// * their shapes have the same length
-    /// * they are at least 2 dimensional
-    /// * last two dimensions of both matrices are valid for matrix multiplication
-    /// and the rest of the dimensions are pair-wise equal, that is their shapes are
-    /// in the following form: `[a, b, ..., d, e, f]` x `[a, b, ..., d, f, g]`.
-    /// The resulting array will have the shape of `[a, b, ..., d, e, g]`.
-    /// Arrays are multiplied in a such way that pairs of sub-arrays of shape
-    /// `[e, f]` and `[f, g]` are multiplied in a standard way.
+    /// * their shapes (except last 2 dimensions) are valid in terms of array broadcasting,
+    /// * they are at least 2 dimensional,
+    /// * last two dimensions of both matrices are valid for matrix multiplication.
+    ///
+    /// Arrays are multiplied in a such way that matrix multiplication operator
+    /// is applied to last 2 dimensions of the arrays.
     ///
     /// * `other` - Second array.
+    ///
+    /// **Panics** if both arrays don't have valid shapes in terms of array broadcasting
+    /// and matrix product.
     ///
     /// # Examples
     /// ```
@@ -891,7 +922,7 @@ impl<T: Numeric> Array<T> {
     /// ];
     /// ```
     pub fn matmul(&self, other: &Array<T>) -> Array<T> {
-        check_shapes_matmul_arrays(&self.shape, &other.shape);
+        let new_shape = get_shape_after_broadcast_matmul(&self.shape, &other.shape);
 
         let matrix1_shape = (
             self.shape[self.shape.len() - 2],
@@ -902,24 +933,17 @@ impl<T: Numeric> Array<T> {
             other.shape[other.shape.len() - 1],
         );
 
-        let slice_len1 = matrix1_shape.1 * matrix1_shape.0;
-        let slice_len2 = matrix2_shape.1 * matrix2_shape.0;
         let slice_len_output = matrix1_shape.0 * matrix2_shape.1;
-
-        let mut new_shape = self.shape.clone();
-        new_shape[self.shape.len() - 2] = matrix1_shape.0;
-        new_shape[self.shape.len() - 1] = matrix2_shape.1;
 
         let data_len = new_shape.iter().product();
         let mut data = vec![T::zero(); data_len];
 
-        let num_slices = data_len / slice_len_output;
-        for i in 0..num_slices {
+        for (i, (slice1, slice2)) in BroadcastIterator::new(self, other, 2).enumerate() {
             matmul_2d_matrix_slices(
-                &self.data[(i * slice_len1)..((i + 1) * slice_len1)],
+                slice1,
                 matrix1_shape.0,
                 matrix1_shape.1,
-                &other.data[(i * slice_len2)..((i + 1) * slice_len2)],
+                slice2,
                 matrix2_shape.0,
                 matrix2_shape.1,
                 &mut data[(i * slice_len_output)..((i + 1) * slice_len_output)],

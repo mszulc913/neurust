@@ -173,6 +173,36 @@ fn test_matmul() {
     assert_eq!(matmul.grad(&c, None), None);
 }
 
+#[test]
+fn test_broadcast() {
+    let a = Tensor::new_variable(Array::new(1., vec![2, 3, 2]));
+    let b = Tensor::new_variable(Array::new(3., vec![3, 2]));
+    let add = &a + &b;
+
+    assert_eq!(add.shape(), vec![2, 3, 2]);
+    assert_eq!(add.eval(None), Array::new(4., vec![2, 3, 2]));
+}
+
+#[test]
+fn test_broadcast_with_ones() {
+    let a = Tensor::new_variable(Array::new(1., vec![5, 1, 3, 2]));
+    let b = Tensor::new_variable(Array::new(3., vec![1, 6, 3, 2]));
+    let add = &a + &b;
+
+    assert_eq!(add.shape(), vec![5, 6, 3, 2]);
+    assert_eq!(add.eval(None), Array::new(4., vec![5, 6, 3, 2]));
+}
+
+#[test]
+fn test_broadcast_smaller_shape() {
+    let a = Tensor::new_variable(Array::new(1., vec![5, 1, 3, 2]));
+    let b = Tensor::new_variable(Array::new(3., vec![3, 2]));
+    let add = &a + &b;
+
+    assert_eq!(add.shape(), vec![5, 1, 3, 2]);
+    assert_eq!(add.eval(None), Array::new(4., vec![5, 1, 3, 2]));
+}
+
 mod test_neg {
     use super::*;
 

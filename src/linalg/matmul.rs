@@ -8,7 +8,7 @@ use core::any::TypeId;
 /// in a given buffer slice.
 ///
 /// If `T` is `f32` or `f64`, then *BLAS* is used.
-pub fn matmul_2d_matrix_slices<T: Numeric>(
+pub(crate) fn matmul_2d_matrix_slices<T: Numeric>(
     data1: &[T],
     n_rows1: usize,
     n_cols1: usize,
@@ -67,11 +67,11 @@ pub fn matmul_2d_matrix_slices<T: Numeric>(
             );
         }
     } else {
-        general_matmul(data1, n_rows1, n_cols1, data2, n_cols2, output_buffer)
+        general_matmul_2d_matrix_slices(data1, n_rows1, n_cols1, data2, n_cols2, output_buffer)
     }
 }
 
-fn general_matmul<T: Numeric>(
+fn general_matmul_2d_matrix_slices<T: Numeric>(
     data1: &[T],
     n_rows1: usize,
     n_cols1: usize,
@@ -130,7 +130,7 @@ fn check_matrix_product_shapes<T: Numeric>(
 
 #[cfg(test)]
 mod tests {
-    pub use super::*;
+    use super::*;
 
     #[test]
     fn test_matmul_2d_matrix_slices_f32() {

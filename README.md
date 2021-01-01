@@ -23,7 +23,8 @@ make sure you have it installed, or the crate won't build.
 
 ### Arrays
 N-dimensional array with support for slicing and basic operations like addition,
-multiplication (using *CBLAS*) and element-wise multiplication:
+multiplication (using *CBLAS*) and element-wise multiplication. Array operands support
+[broadcasting](https://numpy.org/doc/stable/user/basics.broadcasting.html).
 
 ```rust
 use neurust::prelude::*;

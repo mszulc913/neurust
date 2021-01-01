@@ -109,7 +109,7 @@ mod tests {
                 #[test]
                 #[should_panic]
                 fn test_wrong_shape() {
-                    let a = Array::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.], vec![2, 1, 4]);
+                    let a = Array::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.], vec![2, 2, 2]);
                     let b = Array::from_vec(vec![2., 3., 4., 5., 6., 7., 8., 9.], vec![2, 4]);
 
                     a.$function(&b);
@@ -118,7 +118,7 @@ mod tests {
                 #[test]
                 #[should_panic]
                 fn test_assign_wrong_shape() {
-                    let mut a = Array::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.], vec![2, 1, 4]);
+                    let mut a = Array::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.], vec![2, 2, 2]);
                     let b = Array::from_vec(vec![2., 3., 4., 5., 6., 7., 8., 9.], vec![2, 4]);
 
                     a.$function_assign(&b);
@@ -127,7 +127,7 @@ mod tests {
                 #[test]
                 #[should_panic]
                 fn test_wrong_shape_operator() {
-                    let a = Array::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.], vec![2, 1, 4]);
+                    let a = Array::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.], vec![2, 2, 2]);
                     let b = Array::from_vec(vec![2., 3., 4., 5., 6., 7., 8., 9.], vec![2, 4]);
 
                     let _ = &a + &b;
@@ -136,7 +136,7 @@ mod tests {
                 #[test]
                 #[should_panic]
                 fn test_assign_wrong_shape_operator() {
-                    let mut a = Array::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.], vec![2, 1, 4]);
+                    let mut a = Array::from_vec(vec![1., 2., 3., 4., 5., 6., 7., 8.], vec![2, 2, 2]);
                     let b = Array::from_vec(vec![2., 3., 4., 5., 6., 7., 8., 9.], vec![2, 4]);
 
                     a $operator_assign &b
@@ -218,11 +218,71 @@ mod tests {
         Array::from_vec(vec![-1., -1., -1., -1.], vec![2, 1, 2])
     );
     test_operator!(
-        test_multiply, mul, mul_assign, *, *=,
+        test_mul, mul, mul_assign, *, *=,
         Array::from_vec(vec![2., 6., 12., 20.], vec![2, 1, 2])
     );
     test_operator!(
         test_div, div, div_assign, /, /=,
         Array::from_vec(vec![1. / 2., 2. / 3., 3. / 4., 4. / 5.], vec![2, 1, 2])
     );
+
+    #[test]
+    fn test_matmul() {
+        let a = Array::from_vec(
+            vec![1., 2., 3., 4., 5., 6., 1., 2., 3., 3., 2., 1.],
+            vec![2, 2, 3],
+        );
+        let b = Array::from_vec(
+            vec![1., 2., 3., 4., 5., 6., 1., 2., 3., 4., 5., 6.],
+            vec![2, 3, 2],
+        );
+
+        let result = a.matmul(&b);
+
+        assert_eq!(
+            result,
+            Array::from_vec(vec![22., 28., 49., 64., 22., 28., 14., 20.], vec![2, 2, 2],)
+        )
+    }
+
+    #[test]
+    fn test_matmul_broadcast() {
+        let a = Array::from_vec(
+            vec![1., 2., 3., 4., 5., 6., 1., 2., 3., 3., 2., 1.],
+            vec![2, 2, 3],
+        );
+        let b = Array::from_vec(vec![1., 2., 3., 4., 5., 6.], vec![1, 3, 2]);
+
+        let result = a.matmul(&b);
+
+        assert_eq!(
+            result,
+            Array::from_vec(vec![22., 28., 49., 64., 22., 28., 14., 20.], vec![2, 2, 2],)
+        )
+    }
+
+    #[test]
+    fn test_matmul_broadcast_smaller_shape() {
+        let a = Array::from_vec(
+            vec![1., 2., 3., 4., 5., 6., 1., 2., 3., 3., 2., 1.],
+            vec![2, 2, 3],
+        );
+        let b = Array::from_vec(vec![1., 2., 3., 4., 5., 6.], vec![3, 2]);
+
+        let result = a.matmul(&b);
+
+        assert_eq!(
+            result,
+            Array::from_vec(vec![22., 28., 49., 64., 22., 28., 14., 20.], vec![2, 2, 2],)
+        )
+    }
+
+    #[should_panic]
+    #[test]
+    fn test_matmul_wrong_broadcast() {
+        let a = Array::new(1., vec![2, 2, 3]);
+        let b = Array::new(1., vec![3, 3, 2]);
+
+        a.matmul(&b);
+    }
 }

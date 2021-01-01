@@ -107,37 +107,84 @@ pub(crate) fn check_shape_positive(shape: &[usize]) {
     }
 }
 
-/// Checks if two shapes are equal, panics if not.
-pub(crate) fn check_shapes_the_same(shape1: &[usize], shape2: &[usize]) {
-    if shape1 != shape2 {
-        panic!("Arrays' shapes differ. Got: {:?} and {:?}", shape1, shape2);
-    }
-}
-
 // Checks if arrays with given shapes can by multiplied, panics if not.
-// TODO: add tests
-pub(crate) fn check_shapes_matmul_arrays(arr1_shape: &[usize], arr2_shape: &[usize]) {
-    let mut are_shapes_ok = true;
+pub(crate) fn check_shapes_broadcast_matmul(arr1_shape: &[usize], arr2_shape: &[usize]) {
     let arr1_shape_len = arr1_shape.len();
     let arr2_shape_len = arr2_shape.len();
-    if arr1_shape_len != arr2_shape_len
-        || arr2_shape_len < 2 && arr1_shape[arr1_shape_len - 1] != arr2_shape[arr1_shape_len - 2]
+    check_shapes_broadcast(
+        &arr1_shape[..arr1_shape_len - 2],
+        &arr2_shape[..arr2_shape_len - 2],
+    );
+    if arr1_shape_len < 2
+        || arr2_shape_len < 2
+        || arr1_shape[arr1_shape_len - 1] != arr2_shape[arr2_shape_len - 2]
     {
-        are_shapes_ok = false;
-    } else {
-        for i in 0..(arr1_shape_len - 2) {
-            if arr1_shape[i] != arr2_shape[i] {
-                are_shapes_ok = false;
-                break;
-            }
-        }
-    }
-    if !are_shapes_ok {
         panic!(
-            "Incompatible shapes. Got: {:?} and {:?}",
+            "Incompatible shapes for matrix product. Got: {:?} and {:?}",
             arr1_shape, arr2_shape
         );
     }
+}
+
+// Checks if two shapes are compatible in terms of array broadcasting, panics if not.
+pub(crate) fn check_shapes_broadcast(shape1: &[usize], shape2: &[usize]) {
+    let shape1_len = shape1.len();
+    let shape2_len = shape2.len();
+
+    let (smaller_shape, smaller_shape_len, bigger_shape, bigger_shape_len) =
+        if shape1_len > shape2_len {
+            (shape2, shape2_len, shape1, shape1_len)
+        } else {
+            (shape1, shape1_len, shape2, shape2_len)
+        };
+
+    let shapes_len_diff = bigger_shape_len - smaller_shape_len;
+    for i in 0..smaller_shape_len {
+        if smaller_shape[i] != bigger_shape[i + shapes_len_diff]
+            && smaller_shape[i] != 1
+            && bigger_shape[i + shapes_len_diff] != 1
+        {
+            panic!(
+                "Given shapes aren't compatible for broadcast. Got: {:?} and {:?}",
+                shape1, shape2
+            )
+        }
+    }
+}
+
+// Returns shape of an array after applying element-wise operator on two arrays.
+// Panics if shapes aren't compatible in terms of array broadcast.
+pub(crate) fn get_shape_after_broadcast(shape1: &[usize], shape2: &[usize]) -> Vec<usize> {
+    check_shapes_broadcast(shape1, shape2);
+
+    let shape1_len = shape1.len();
+    let shape2_len = shape2.len();
+
+    let (smaller_shape, smaller_shape_len, bigger_shape, bigger_shape_len) =
+        if shape1_len > shape2_len {
+            (shape2, shape2_len, shape1, shape1_len)
+        } else {
+            (shape1, shape1_len, shape2, shape2_len)
+        };
+
+    let mut new_shape = bigger_shape.to_vec();
+    let shapes_lens_diff = bigger_shape_len - smaller_shape_len;
+    for i in 0..smaller_shape_len {
+        *new_shape.get_mut(i + shapes_lens_diff).unwrap() =
+            smaller_shape[i].max(bigger_shape[i + shapes_lens_diff]);
+    }
+    new_shape
+}
+
+// Returns shape of an array after applying matrix product operator.
+// Panics if shapes aren't compatible in terms of array broadcast or matrix product.
+pub(crate) fn get_shape_after_broadcast_matmul(shape1: &[usize], shape2: &[usize]) -> Vec<usize> {
+    check_shapes_broadcast_matmul(shape1, shape2);
+    let mut new_shape =
+        get_shape_after_broadcast(&shape1[..shape1.len() - 2], &shape2[..shape2.len() - 2]);
+    new_shape.push(shape1[shape1.len() - 2]);
+    new_shape.push(*shape2.last().unwrap());
+    new_shape
 }
 
 /// Transposes matrix to a given location.
@@ -297,5 +344,129 @@ mod tests {
             vec![1, 1, 1],
             get_shape_after_reduce(&[2, 3, 2], None, true)
         );
+    }
+
+    #[test]
+    fn test_check_shapes_broadcast() {
+        check_shapes_broadcast(&[2, 2, 3], &[2, 2, 3]);
+        check_shapes_broadcast(&[1], &[2, 3, 2]);
+        check_shapes_broadcast(&[1, 1, 1], &[2, 3, 2]);
+        check_shapes_broadcast(&[3, 1, 1], &[1, 3, 2]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_check_shapes_broadcast_wrong_last_dim() {
+        check_shapes_broadcast(&[2, 2, 2], &[2, 2, 3]);
+    }
+
+    #[test]
+    fn test_check_shapes_broadcast_matmul() {
+        check_shapes_broadcast_matmul(&[2, 2, 3], &[2, 3, 2]);
+        check_shapes_broadcast_matmul(&[1, 2, 3], &[2, 3, 2]);
+        check_shapes_broadcast_matmul(&[2, 2, 3], &[1, 3, 2]);
+        check_shapes_broadcast_matmul(&[2, 3], &[7, 3, 2]);
+        check_shapes_broadcast_matmul(&[2, 2, 3], &[3, 2]);
+        check_shapes_broadcast_matmul(&[3, 2, 2, 3], &[3, 1, 3, 2]);
+        check_shapes_broadcast_matmul(&[1, 5, 2, 3], &[3, 1, 3, 2]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_check_shapes_broadcast_matmul_wrong_last_dims() {
+        check_shapes_broadcast_matmul(&[2, 2, 2], &[2, 3, 2]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_check_shapes_broadcast_matmul_wrong_broadcast() {
+        check_shapes_broadcast_matmul(&[2, 2, 3], &[3, 3, 2]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_check_shapes_broadcast_matmul_too_short_first() {
+        check_shapes_broadcast_matmul(&[3], &[3, 2]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_check_shapes_broadcast_matmul_too_short_second() {
+        check_shapes_broadcast_matmul(&[3, 2], &[2]);
+    }
+
+    #[test]
+    fn test_get_shape_after_broadcast() {
+        assert_eq!(
+            get_shape_after_broadcast(&[3, 5, 2], &[3, 5, 2]),
+            vec![3, 5, 2]
+        );
+        assert_eq!(
+            get_shape_after_broadcast(&[3, 5, 2], &[5, 2]),
+            vec![3, 5, 2]
+        );
+        assert_eq!(
+            get_shape_after_broadcast(&[5, 2], &[3, 5, 2]),
+            vec![3, 5, 2]
+        );
+        assert_eq!(
+            get_shape_after_broadcast(&[3, 5, 2], &[1, 5, 2]),
+            vec![3, 5, 2]
+        );
+        assert_eq!(
+            get_shape_after_broadcast(&[3, 1, 2], &[3, 5, 2]),
+            vec![3, 5, 2]
+        );
+        assert_eq!(
+            get_shape_after_broadcast(&[3, 5, 2], &[3, 5, 1]),
+            vec![3, 5, 2]
+        );
+        assert_eq!(
+            get_shape_after_broadcast(&[3, 5, 1], &[3, 5, 1]),
+            vec![3, 5, 1]
+        );
+        assert_eq!(get_shape_after_broadcast(&[3, 1], &[1, 3]), vec![3, 3]);
+    }
+
+    #[test]
+    fn test_get_shape_after_broadcast_matmul() {
+        assert_eq!(
+            get_shape_after_broadcast_matmul(&[3, 5, 2, 3, 2], &[3, 5, 2, 2, 3]),
+            vec![3, 5, 2, 3, 3]
+        );
+        assert_eq!(
+            get_shape_after_broadcast_matmul(&[3, 5, 2, 3, 2], &[5, 2, 2, 3]),
+            vec![3, 5, 2, 3, 3]
+        );
+        assert_eq!(
+            get_shape_after_broadcast_matmul(&[5, 2, 3, 2], &[3, 5, 2, 2, 3]),
+            vec![3, 5, 2, 3, 3]
+        );
+        assert_eq!(
+            get_shape_after_broadcast_matmul(&[3, 5, 2, 3, 2], &[1, 5, 2, 2, 3]),
+            vec![3, 5, 2, 3, 3]
+        );
+        assert_eq!(
+            get_shape_after_broadcast_matmul(&[3, 1, 2, 3, 2], &[3, 5, 2, 2, 3]),
+            vec![3, 5, 2, 3, 3]
+        );
+        assert_eq!(
+            get_shape_after_broadcast_matmul(&[3, 5, 2, 3, 2], &[3, 5, 1, 2, 3]),
+            vec![3, 5, 2, 3, 3]
+        );
+        assert_eq!(
+            get_shape_after_broadcast_matmul(&[3, 5, 1, 3, 2], &[3, 5, 1, 2, 3]),
+            vec![3, 5, 1, 3, 3]
+        );
+        assert_eq!(
+            get_shape_after_broadcast_matmul(&[3, 1, 3, 2], &[1, 3, 2, 3]),
+            vec![3, 3, 3, 3]
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_shape_after_broadcast_wrong_matrix_shape() {
+        get_shape_after_broadcast_matmul(&[3, 5, 2, 3, 2], &[3, 5, 2, 3, 3]);
     }
 }

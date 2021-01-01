@@ -1,5 +1,5 @@
 use crate::graph::GraphOp;
-use crate::linalg::utils::check_shapes_matmul_arrays;
+use crate::linalg::utils::{get_shape_after_broadcast, get_shape_after_broadcast_matmul};
 use crate::linalg::{Array, Numeric};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -16,16 +16,10 @@ macro_rules! impl_struct_op_2_inputs {
             pub fn new(input_1: Rc<dyn GraphOp<T>>, input_2: Rc<dyn GraphOp<T>>) -> $op_name<T> {
                 let shape_1 = input_1.shape();
                 let shape_2 = input_2.shape();
-                if shape_1 != shape_2 {
-                    panic!(
-                        "Shapes of both inputs should be the same! Got: {:?} and {:?}",
-                        shape_1, shape_2
-                    )
-                }
                 $op_name {
                     input_1,
                     input_2,
-                    shape: shape_1,
+                    shape: get_shape_after_broadcast(shape_1.as_slice(), shape_2.as_slice()),
                 }
             }
         }
@@ -317,15 +311,12 @@ pub(crate) struct MatMulOp<T: Numeric> {
 
 impl<T: Numeric> MatMulOp<T> {
     pub fn new(input_1: Rc<dyn GraphOp<T>>, input_2: Rc<dyn GraphOp<T>>) -> MatMulOp<T> {
-        let shape_1 = input_1.shape();
-        let shape_2 = input_2.shape();
-        check_shapes_matmul_arrays(&shape_1, &shape_2);
-        let mut new_shape = shape_1[..shape_1.len() - 1].to_vec();
-        new_shape.push(*shape_2.last().unwrap());
+        let shape1 = input_1.shape();
+        let shape2 = input_2.shape();
         MatMulOp {
             input_1,
             input_2,
-            shape: new_shape,
+            shape: get_shape_after_broadcast_matmul(shape1.as_slice(), shape2.as_slice()),
         }
     }
 }
